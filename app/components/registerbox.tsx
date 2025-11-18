@@ -1,8 +1,34 @@
-import React from 'react'
+'use client'
+import React from 'react';
+import {useState} from 'react';
 import Link from 'next/link'
 import './loginbox.css' // Reusing the same CSS file
 
 function RegisterBox() {
+    const [fullName,setFullName] = useState("");
+    const [email,setEmail]= useState("");
+    const [password,setPassword]= useState("");
+    
+
+    const handleSubmit= async (e: React.FormEvent) =>{
+        e.preventDefault();
+
+        const formData = {full_name: fullName, email, password};
+
+        const res = await fetch('/api/auth/register',{
+            method:"POST",
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body:JSON.stringify(formData),
+        })
+
+        const returned_user_ddata = await res.json()
+        console.log(returned_user_ddata)
+
+
+    }
+
   return (
     <>
       <div id="app">
@@ -29,14 +55,16 @@ function RegisterBox() {
                   <h2>Create Account</h2>
                   <p>Join the tournament platform</p>
                 </div>
-                <form className="auth-form" id="registerForm">
+                <form className="auth-form" id="registerForm" onSubmit={handleSubmit}>
                   <div className="form-group">
                     <label htmlFor="username">
                       <i className="fas fa-user" />
-                      Username
+                      Full Name
                     </label>
                     <input
                       type="text"
+                      value={fullName}
+                      onChange={e=> setFullName(e.target.value)}
                       id="username"
                       name="username"
                       placeholder="Enter your username"
@@ -50,6 +78,8 @@ function RegisterBox() {
                     </label>
                     <input
                       type="email"
+                      value={email}
+                      onChange={e=> setEmail(e.target.value)}
                       id="email"
                       name="email"
                       placeholder="Enter your email"
@@ -64,6 +94,8 @@ function RegisterBox() {
                     <div className="password-input">
                       <input
                         type="password"
+                        value={password}
+                        onChange={e=> setPassword(e.target.value)}
                         id="password"
                         name="password"
                         placeholder="Create a password"
@@ -77,27 +109,7 @@ function RegisterBox() {
                       </button>
                     </div>
                   </div>
-                  <div className="form-group">
-                    <label htmlFor="confirmPassword">
-                      <i className="fas fa-lock" />
-                      Confirm Password
-                    </label>
-                    <div className="password-input">
-                      <input
-                        type="password"
-                        id="confirmPassword"
-                        name="confirmPassword"
-                        placeholder="Confirm your password"
-                        required
-                      />
-                      <button
-                        type="button"
-                        className="toggle-password"
-                      >
-                        <i className="fas fa-eye" />
-                      </button>
-                    </div>
-                  </div>
+                
                   <button type="submit" className="auth-btn primary-btn">
                     <i className="fas fa-user-plus" />
                     CREATE ACCOUNT
