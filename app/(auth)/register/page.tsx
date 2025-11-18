@@ -1,9 +1,12 @@
 import React from 'react'
+import RegisterBox from '@/app/components/registerbox'
 
-function register() {
+function Register() {
   return (
-    <div>This is Register Page</div>
+    <div>
+      <RegisterBox />
+    </div>
   )
 }
 
-export default register
+export default Register

@@ -2,7 +2,7 @@ import React from 'react'
 import Login from './(auth)/login/page'
 import Home from './(main)/home/page'
 
-const isLoggedIn = true;
+const isLoggedIn = false;
 
 function root() {
  if(!isLoggedIn){

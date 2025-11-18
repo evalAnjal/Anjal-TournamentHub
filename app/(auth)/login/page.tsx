@@ -1,8 +1,11 @@
 import React from 'react'
+import LoginBox from '@/app/components/loginbox'
 
 function Login() {
   return (
-    <div>this isLogin</div>
+    <div>
+      <LoginBox />
+    </div>
   )
 }
 
