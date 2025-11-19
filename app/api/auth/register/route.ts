@@ -1,6 +1,8 @@
 import {pool} from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import { NextRequest, NextResponse } from 'next/server';
+import {limiter } from '@/lib/rate-limit'
+
 
 interface user {
     id:number;
@@ -12,6 +14,12 @@ interface user {
 
 export async function POST(req: NextRequest){
     try{
+        const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown'
+
+        const { success } = await limiter.limit(ip)
+        if(!success){
+            return NextResponse.json({error:'Too many requests. Try again later.'}, {status: 429})
+        }
         const body = await req.json();
         const {full_name, email, password} = body as {full_name : string ; email:string; password:string;};
     
