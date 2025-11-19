@@ -38,7 +38,7 @@ export async function POST(req: NextRequest){
         
         const result = await pool.query<user>(query,[full_name,email,password_hash])
 
-        return NextResponse.json({user : result.rows[0]})
+        return NextResponse.json({message:"suscess",user : result.rows[0]})
     }
 
 

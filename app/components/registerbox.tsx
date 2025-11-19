@@ -2,12 +2,15 @@
 import React from 'react';
 import {useState} from 'react';
 import Link from 'next/link'
+import { useRouter} from 'next/navigation';
 import './loginbox.css' // Reusing the same CSS file
 
 function RegisterBox() {
     const [fullName,setFullName] = useState("");
     const [email,setEmail]= useState("");
     const [password,setPassword]= useState("");
+
+    const router = useRouter();
     
 
     const handleSubmit= async (e: React.FormEvent) =>{
@@ -23,8 +26,16 @@ function RegisterBox() {
             body:JSON.stringify(formData),
         })
 
-        const returned_user_ddata = await res.json()
-        console.log(returned_user_ddata)
+        const returned_user_data = await res.json()
+        if (returned_user_data.message="suscess"){
+            setFullName('');
+            setEmail('');
+            setPassword('');
+
+            alert("user created suscessfully");
+            router.push('/login');
+        }
+        
 
 
     }
