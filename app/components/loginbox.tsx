@@ -1,8 +1,42 @@
+'use client'
 import React from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import './loginbox.css'
+import { json } from 'stream/consumers'
+import { useRouter } from 'next/navigation'
 
 function LoginBox() {
+  const [email,setEmail] = useState('');
+  const [password,setPassword] = useState('');
+
+  const router = useRouter();
+
+  const handleLogin = async (e : React.FormEvent) =>{
+    e.preventDefault();
+
+    const formData = {email:email, password:password}
+
+    const res = await fetch ("/api/auth/login",{
+      method: 'POST',
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify(formData)
+    })
+
+    const data = await res.json();
+
+   console.log(data)
+   if(data.suscess){
+    console.log("logged in suscess")
+    router.push('/')
+   }
+   else{
+    alert(data.message)
+   }
+
+  }
+
+
   return (
     <>
     <div id="app">
@@ -29,13 +63,15 @@ function LoginBox() {
               <h2>Welcome Back</h2>
               <p>Sign in to your account</p>
             </div>
-            <form className="auth-form" id="loginForm">
+            <form className="auth-form" id="loginForm" onSubmit={handleLogin}>
               <div className="form-group">
                 <label htmlFor="email">
                   <i className="fas fa-envelope" />
                   Email or Username
                 </label>
                 <input
+                  value={email}
+                  onChange={(e)=> setEmail(e.target.value)}
                   type="text"
                   id="email"
                   name="email"
@@ -50,6 +86,8 @@ function LoginBox() {
                 </label>
                 <div className="password-input">
                   <input
+                    value={password}
+                    onChange={e=> setPassword(e.target.value)}
                     type="password"
                     id="password"
                     name="password"
