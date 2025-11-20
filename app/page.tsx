@@ -1,17 +1,15 @@
-import React from 'react'
-import Login from './(auth)/login/page'
-import Home from './(main)/home/page'
+import { getUserFromCookies } from "@/lib/auth";
+import { redirect } from "next/navigation";
 
-const isLoggedIn = false;
+export default async function RootPage() {
+  const user = await getUserFromCookies();
 
-function root() {
- if(!isLoggedIn){
-   return <Login />
- }
- else{
-  return  <Home />
- }
+  if (!user) redirect("/login");
+  console.log(user)
 
+  return (
+    <div>
+      <h1>Welcome {user.name || 'Undefined'}</h1>
+    </div>
+  );
 }
-
-export default root
