@@ -2,7 +2,7 @@ import React from 'react'
 
 function Waller() {
   return (
-    <div>Waller</div>
+    <div>this is wallet page</div>
   )
 }
 
