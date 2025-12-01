@@ -1,5 +1,5 @@
 import React from 'react'
-import LoginBox from '@/app/components/loginbox'
+import LoginBox from '@/components/loginbox'
 
 function Login() {
   return (

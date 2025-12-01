@@ -1,5 +1,5 @@
 import React from 'react'
-import RegisterBox from '@/app/components/registerbox'
+import RegisterBox from '@/components/registerbox'
 
 function Register() {
   return (
