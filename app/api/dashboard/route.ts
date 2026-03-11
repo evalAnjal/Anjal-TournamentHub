@@ -51,7 +51,7 @@ export async function GET() {
   const [stats] = await sql`
     SELECT
       COUNT(DISTINCT tr.tournament_id) AS tournaments_joined,
-      COUNT(DISTINCT CASE WHEN mp.is_winner THEN mp.match_id END) AS matches_won,
+      COUNT(DISTINCT CASE WHEN mp.is_winner = true THEN mp.match_id END) AS matches_won,
       COUNT(DISTINCT mp.match_id) AS matches_played
     FROM users u
     LEFT JOIN tournament_registrations tr ON tr.user_id = u.id

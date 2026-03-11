@@ -14,7 +14,7 @@ export async function GET(){
    const cookieStore = await cookies();
        const token = cookieStore.get('session')?.value;
    
-       if (!token) { return null}
+       if (!token) { return NextResponse.json({ user: null }, { status: 401 }); }
    
        const user = jwt.verify(token,process.env.JWT_SECRET!) as UserJwtPayload
        return NextResponse.json({

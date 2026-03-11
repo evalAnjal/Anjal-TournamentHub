@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 
 type Transaction = {
@@ -46,7 +46,7 @@ export default function WalletPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  async function loadWallet() {
+  const loadWallet = useCallback(async () => {
     const res = await fetch("/api/wallet");
     if (res.status === 401) { router.push("/login"); return; }
     const data = await res.json();
@@ -55,9 +55,11 @@ export default function WalletPage() {
     setStats(data.stats);
     setLocked(data.locked ?? "0");
     setLoading(false);
-  }
+  }, [router]);
 
-  useEffect(() => { loadWallet(); }, []);
+  useEffect(() => {
+    loadWallet();
+  }, [loadWallet]);
 
   async function handleSubmit() {
     setError("");
@@ -70,11 +72,18 @@ export default function WalletPage() {
       body: JSON.stringify({ amount: val }),
     });
     const data = await res.json();
-    if (!res.ok) { setError(data.error || "Something went wrong"); setSubmitting(false); return; }
     setModal(null);
     setAmount("");
     setSubmitting(false);
-    loadWallet();
+    // Reload wallet data
+    const walletRes = await fetch("/api/wallet");
+    if (walletRes.status === 401) { router.push("/login"); return; }
+    const walletData = await walletRes.json();
+    setTransactions(walletData.transactions);
+    setStats(walletData.stats);
+    setLocked(walletData.locked ?? "0");
+    await loadWallet();
+    void loadWallet();
   }
 
   const filtered = filter === "All" ? transactions : transactions.filter((t) => t.type === filter);
