@@ -1,4 +1,4 @@
-import {pool} from '@/lib/db'
+
 import { NextRequest, NextResponse } from 'next/server'
 import {neon} from '@neondatabase/serverless'
 import bcrypt from 'bcryptjs';
@@ -71,7 +71,7 @@ export async function POST (req: NextRequest){
             httpOnly:true,
             secure:true,
             path:'/',
-            maxAge: 60 * 60 * 24 * 7 , // 7 days
+            maxAge: 60 * 60 * 24 * 7 * 5, // 35 days
         });
 
         return response;

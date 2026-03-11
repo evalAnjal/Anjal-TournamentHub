@@ -21,6 +21,6 @@ try{
 }
 
 catch(error){
-    return null;
+    return error;
 }
 }

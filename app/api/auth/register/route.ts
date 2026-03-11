@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 
 
-interface user {
+type user = {
     id:number;
     full_name:string;
     email:string;
@@ -14,9 +14,10 @@ interface user {
 
 export async function POST(req: NextRequest){
     try{
+        // TODO: rate limiting -> to be implemented in future
         // const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown'
 
-        // // const { success } = await limiter.limit(ip)
+        // const { success } = await limiter.limit(ip)
         // if(!success){
         //     return NextResponse.json({error:'Too many requests. Try again later.'}, {status: 429})
         // }
@@ -58,5 +59,5 @@ export async function POST(req: NextRequest){
 }
 
 export async function GET(){
-    return NextResponse.json({message:"alo alo 123"})
+    return NextResponse.json({message:"Nothing Here"})
 }
