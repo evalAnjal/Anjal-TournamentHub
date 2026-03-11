@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
 import { neon } from "@neondatabase/serverless";
 
-const sql = neon(process.env.DATABASE_URL!);
+const sql = neon(process.env.NEON_DB_URL!);
 
 interface UserJwtPayload {
   id: number;
@@ -11,9 +11,9 @@ interface UserJwtPayload {
   name: string;
 }
 
-async function getUserFromSession() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("session")?.value;
+async function getUser() {
+  const store = await cookies();
+  const token = store.get("session")?.value;
   if (!token) return null;
   try {
     return jwt.verify(token, process.env.JWT_SECRET!) as UserJwtPayload;
@@ -23,7 +23,7 @@ async function getUserFromSession() {
 }
 
 export async function GET() {
-  const user = await getUserFromSession();
+  const user = await getUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -40,8 +40,25 @@ export async function GET() {
     FROM wallet_transactions
     WHERE wallet_id = ${wallet.id}
     ORDER BY created_at DESC
-    LIMIT 10
+    LIMIT 20
   `;
 
-  return NextResponse.json({ wallet, transactions });
+  // Summary stats
+  const [stats] = await sql/*sql*/`
+    SELECT
+      COALESCE(SUM(CASE WHEN type = 'prize' THEN amount ELSE 0 END), 0) AS lifetime_winnings,
+      COALESCE(SUM(CASE WHEN type = 'deposit' THEN amount ELSE 0 END), 0) AS total_deposits,
+      COALESCE(SUM(CASE WHEN type = 'withdraw' THEN amount ELSE 0 END), 0) AS total_payouts
+    FROM wallet_transactions WHERE wallet_id = ${wallet.id}
+  `;
+
+  // Locked in tournaments (sum of entry_fees for ongoing tournaments)
+  const [locked] = await sql/*sql*/`
+    SELECT COALESCE(SUM(t.entry_fee), 0) AS locked
+    FROM tournament_registrations tr
+    JOIN tournaments t ON t.id = tr.tournament_id
+    WHERE tr.user_id = ${user.id} AND t.status = 'ongoing'
+  `;
+
+  return NextResponse.json({ wallet, transactions, stats, locked: locked.locked });
 }

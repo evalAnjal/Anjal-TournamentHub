@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
 import { neon } from "@neondatabase/serverless";
 
-const sql = neon(process.env.DATABASE_URL!);
+const sql = neon(process.env.NEON_DB_URL!);
 
 interface UserJwtPayload {
   id: number;
@@ -11,9 +11,9 @@ interface UserJwtPayload {
   name: string;
 }
 
-async function getUserFromSession() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("session")?.value;
+async function getUser() {
+  const store = await cookies();
+  const token = store.get("session")?.value;
   if (!token) return null;
   try {
     return jwt.verify(token, process.env.JWT_SECRET!) as UserJwtPayload;
@@ -23,7 +23,7 @@ async function getUserFromSession() {
 }
 
 export async function POST(req: Request) {
-  const user = await getUserFromSession();
+  const user = await getUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -38,7 +38,7 @@ export async function POST(req: Request) {
     INSERT INTO wallets (user_id)
     VALUES (${user.id})
     ON CONFLICT (user_id) DO UPDATE SET user_id = EXCLUDED.user_id
-    RETURNING id
+    RETURNING id, balance
   `;
 
   await sql/*sql*/`
@@ -46,11 +46,12 @@ export async function POST(req: Request) {
     VALUES (${wallet.id}, ${value}, 'deposit', ${description || 'Deposit'})
   `;
 
-  await sql/*sql*/`
+  const [updated] = await sql/*sql*/`
     UPDATE wallets
     SET balance = balance + ${value}, updated_at = NOW()
     WHERE id = ${wallet.id}
+    RETURNING balance
   `;
 
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ success: true, balance: updated.balance });
 }
