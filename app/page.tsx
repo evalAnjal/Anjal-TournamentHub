@@ -52,7 +52,7 @@ export default async function HomePage() {
           <header className="space-y-2">
             <p className="text-xs uppercase tracking-wide text-purple-400">GameHub Dashboard</p>
             <h1 className="text-2xl md:text-3xl font-semibold">
-              Welcome back, <span className="text-purple-300">{user.name}</span>
+              Welcome back, <span className="text-purple-300">{user.name!}</span>
             </h1>
             <p className="text-sm text-gray-400">
               Track your performance, follow live tournaments, and jump back into your matches.
