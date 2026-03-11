@@ -13,6 +13,14 @@ const TRANSACTIONS = [
   { id: 3, type: "Deposit", amount: "+NPR 5,000", date: "2 days ago", detail: "Top-up" },
 ] as const;
 
+const SUMMARY = {
+  lifetimeWinnings: "NPR 320,000",
+  totalDeposits: "NPR 40,000",
+  totalPayouts: "NPR 95,000",
+};
+
+const FILTERS = ["All", "Prize", "Deposit", "Payout"] as const;
+
 export default async function WalletPage() {
   const user = await getUserFromCookies();
   if (!user) redirect("/login");
@@ -28,6 +36,22 @@ export default async function WalletPage() {
               Track winnings, deposits and withdrawals.
             </p>
           </header>
+
+          {/* Summary row */}
+          <section className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs" aria-label="Wallet summary">
+            <div className="rounded-lg border border-gray-800 bg-[#0b0b11] px-4 py-3">
+              <p className="text-[11px] text-gray-400 mb-1">Lifetime winnings</p>
+              <p className="text-sm font-semibold text-emerald-300">{SUMMARY.lifetimeWinnings}</p>
+            </div>
+            <div className="rounded-lg border border-gray-800 bg-[#0b0b11] px-4 py-3">
+              <p className="text-[11px] text-gray-400 mb-1">Total deposits</p>
+              <p className="text-sm font-semibold text-purple-300">{SUMMARY.totalDeposits}</p>
+            </div>
+            <div className="rounded-lg border border-gray-800 bg-[#0b0b11] px-4 py-3">
+              <p className="text-[11px] text-gray-400 mb-1">Total payouts</p>
+              <p className="text-sm font-semibold text-amber-300">{SUMMARY.totalPayouts}</p>
+            </div>
+          </section>
 
           <section className="grid gap-6 md:grid-cols-[1.4fr,1.6fr]" aria-label="Wallet overview">
             <div className="rounded-lg border border-gray-800 bg-[#0b0b11] p-5 space-y-4">
@@ -67,8 +91,25 @@ export default async function WalletPage() {
             </div>
           </section>
 
+          {/* Transactions */}
           <section className="space-y-3" aria-label="Transactions">
-            <h2 className="text-sm font-medium text-gray-300">Recent transactions</h2>
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-sm font-medium text-gray-300">Recent transactions</h2>
+              <div className="flex flex-wrap gap-1 text-[11px]">
+                {FILTERS.map((f, idx) => (
+                  <span
+                    key={f}
+                    className={`px-2 py-1 rounded-full border cursor-default ${
+                      idx === 0
+                        ? "border-purple-500/60 bg-purple-600/20 text-purple-100"
+                        : "border-gray-700 text-gray-300"
+                    }`}
+                  >
+                    {f}
+                  </span>
+                ))}
+              </div>
+            </div>
             <div className="rounded-lg border border-gray-800 bg-[#0b0b11] divide-y divide-gray-800 text-xs">
               {TRANSACTIONS.map((tx) => (
                 <div key={tx.id} className="flex items-center justify-between px-4 py-3">
