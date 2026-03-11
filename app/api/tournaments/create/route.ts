@@ -5,7 +5,7 @@ import { neon } from "@neondatabase/serverless";
 
 const sql = neon(process.env.NEON_DB_URL!);
 
-interface UserJwtPayload { id: number; email: string; name: string; }
+interface UserJwtPayload { id: number; email: string; name: string; role?: string; }
 
 async function getUser() {
   const store = await cookies();
@@ -27,7 +27,7 @@ export async function POST(req: Request) {
   }
 
   const [tournament] = await sql`
-    INSERT INTO tournaments (name, game, description, entry_fee, prize_pool, max_players, start_time, status)
+    INSERT INTO tournaments (name, game, description, entry_fee, prize_pool, max_players, start_time, status, created_by)
     VALUES (
       ${name},
       ${game},
@@ -36,7 +36,8 @@ export async function POST(req: Request) {
       ${Number(prize_pool) || 0},
       ${Number(max_players) || null},
       ${start_time || null},
-      'upcoming'
+      'pending_approval',
+      ${user.id}
     )
     RETURNING id, name, game, status
   `;

@@ -26,7 +26,7 @@ export async function POST (req: NextRequest){
         // checking the existance of user 
 
         const user  = await sql `
-        SELECT id , full_name , email , password_hash
+        SELECT id , full_name , email , password_hash , role
         FROM users
         where email = ${email}
         LIMIT 1
@@ -57,7 +57,7 @@ export async function POST (req: NextRequest){
         // creating a jwt token for saving user's login state
 
         const token = jwt.sign(
-            {id: foundUser.id , email:foundUser.email , name:foundUser.full_name},
+            {id: foundUser.id , email:foundUser.email , name:foundUser.full_name, role: foundUser.role ?? 'user'},
             process.env.JWT_SECRET!,
             {expiresIn : "7D"}
         )

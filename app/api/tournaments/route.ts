@@ -25,6 +25,7 @@ export async function GET() {
       COUNT(tr.id)::int AS registered_count
     FROM tournaments t
     LEFT JOIN tournament_registrations tr ON tr.tournament_id = t.id
+    WHERE t.status != 'pending_approval'
     GROUP BY t.id
     ORDER BY t.start_time NULLS LAST, t.created_at DESC
   `;

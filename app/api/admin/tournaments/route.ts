@@ -5,19 +5,22 @@ import { neon } from "@neondatabase/serverless";
 
 const sql = neon(process.env.NEON_DB_URL!);
 
-interface UserJwtPayload { id: number; email: string; name: string; }
+interface UserJwtPayload { id: number; email: string; name: string; role?: string; }
 
-async function getUser() {
+async function getAdmin() {
   const store = await cookies();
   const token = store.get("session")?.value;
   if (!token) return null;
-  try { return jwt.verify(token, process.env.JWT_SECRET!) as UserJwtPayload; }
-  catch { return null; }
+  try {
+    const user = jwt.verify(token, process.env.JWT_SECRET!) as UserJwtPayload;
+    if (user.role !== "admin") return null;
+    return user;
+  } catch { return null; }
 }
 
 // GET /api/admin/tournaments — all tournaments with participant list
 export async function GET() {
-  const user = await getUser();
+  const user = await getAdmin();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const tournaments = await sql`
