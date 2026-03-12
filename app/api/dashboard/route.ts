@@ -26,14 +26,23 @@ export async function GET() {
     RETURNING balance, currency
   `;
 
-  // Recent matches
+  // Recent matches (tournament history)
   const matches = await sql`
-    SELECT m.id, m.status, m.started_at, mp.is_winner, t.name AS tournament_name, t.game
-    FROM match_participants mp
-    JOIN matches m ON m.id = mp.match_id
-    LEFT JOIN tournaments t ON t.id = m.tournament_id
-    WHERE mp.user_id = ${user.id}
-    ORDER BY m.started_at DESC NULLS LAST
+    SELECT
+      t.id AS id,
+      t.status,
+      t.start_time AS started_at,
+      t.name AS tournament_name,
+      t.game,
+      CASE WHEN res.placement = 1 THEN true
+           WHEN t.status = 'completed' THEN false
+           ELSE NULL END AS is_winner
+    FROM tournament_registrations tr
+    JOIN tournaments t ON t.id = tr.tournament_id
+    LEFT JOIN tournament_results res
+      ON res.user_id = tr.user_id AND res.tournament_id = tr.tournament_id
+    WHERE tr.user_id = ${user.id}
+    ORDER BY t.start_time DESC NULLS LAST
     LIMIT 5
   `;
 
@@ -51,11 +60,12 @@ export async function GET() {
   const [stats] = await sql`
     SELECT
       COUNT(DISTINCT tr.tournament_id) AS tournaments_joined,
-      COUNT(DISTINCT CASE WHEN mp.is_winner = true THEN mp.match_id END) AS matches_won,
-      COUNT(DISTINCT mp.match_id) AS matches_played
+      COUNT(DISTINCT CASE WHEN res.placement = 1 THEN res.tournament_id END) AS matches_won,
+      COUNT(DISTINCT CASE WHEN t.status = 'completed' THEN tr.tournament_id END) AS matches_played
     FROM users u
     LEFT JOIN tournament_registrations tr ON tr.user_id = u.id
-    LEFT JOIN match_participants mp ON mp.user_id = u.id
+    LEFT JOIN tournaments t ON t.id = tr.tournament_id
+    LEFT JOIN tournament_results res ON res.user_id = u.id AND res.tournament_id = tr.tournament_id
     WHERE u.id = ${user.id}
   `;
 

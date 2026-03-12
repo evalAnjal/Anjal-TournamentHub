@@ -24,6 +24,8 @@ type Tournament = {
   status: "pending_approval" | "upcoming" | "ongoing" | "completed" | "cancelled";
   registered_count: number;
   participants: Participant[];
+  room_id: string | null;
+  room_password: string | null;
 };
 
 const GAMES = ["Valorant", "PUBG", "CS2", "Apex Legends", "Free Fire", "Other"];
@@ -233,13 +235,20 @@ function TournamentCard({ t, onRefresh, showToast }: {
   const [expanded, setExpanded] = useState(false);
   const [actioning, setActioning] = useState(false);
   const [winnerUserId, setWinnerUserId] = useState("");
+  const [roomId, setRoomId] = useState(t.room_id ?? "");
+  const [roomPassword, setRoomPassword] = useState(t.room_password ?? "");
 
   async function updateStatus(action: "approve" | "start" | "end" | "cancel") {
     setActioning(true);
+    const body: Record<string, unknown> = { action };
+    if (action === "approve" || action === "start") {
+      if (roomId.trim()) body.room_id = roomId.trim();
+      if (roomPassword.trim()) body.room_password = roomPassword.trim();
+    }
     const res = await fetch(`/api/admin/tournaments/${t.id}/status`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action }),
+      body: JSON.stringify(body),
     });
     const data = await res.json();
     setActioning(false);
@@ -292,8 +301,45 @@ function TournamentCard({ t, onRefresh, showToast }: {
       {expanded && (
         <div className="border-t border-gray-800 px-4 py-4 space-y-4">
           {/* Status actions */}
-          <div className="space-y-2">
+          <div className="space-y-3">
             <p className="text-[11px] text-gray-400 uppercase tracking-wide">Tournament controls</p>
+
+            {/* Room details — shown when approving or starting */}
+            {(t.status === "pending_approval" || t.status === "upcoming") && (
+              <div className="rounded-md border border-gray-700 bg-[#050509] px-3 py-3 space-y-2">
+                <p className="text-[11px] text-purple-300 font-medium">🔑 Set room details (given to registered players)</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[10px] text-gray-500 mb-1 block">Room ID</label>
+                    <input
+                      value={roomId}
+                      onChange={(e) => setRoomId(e.target.value)}
+                      placeholder="e.g. 123456"
+                      className="w-full bg-[#0b0b11] border border-gray-700 rounded px-2 py-1.5 text-xs text-gray-100 focus:outline-none focus:border-purple-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-gray-500 mb-1 block">Room Password</label>
+                    <input
+                      value={roomPassword}
+                      onChange={(e) => setRoomPassword(e.target.value)}
+                      placeholder="e.g. abc123"
+                      className="w-full bg-[#0b0b11] border border-gray-700 rounded px-2 py-1.5 text-xs text-gray-100 focus:outline-none focus:border-purple-500"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Current room details — shown when already set */}
+            {(t.status === "ongoing" || t.status === "upcoming") && (t.room_id || t.room_password) && (
+              <div className="rounded-md border border-yellow-500/30 bg-yellow-500/5 px-3 py-2 space-y-1">
+                <p className="text-[11px] text-yellow-400 font-medium">Current room details (visible to registered players)</p>
+                {t.room_id && <p className="text-xs text-gray-200">Room ID: <span className="font-mono text-yellow-300">{t.room_id}</span></p>}
+                {t.room_password && <p className="text-xs text-gray-200">Password: <span className="font-mono text-yellow-300">{t.room_password}</span></p>}
+              </div>
+            )}
+
             <div className="flex flex-wrap gap-2">
               {t.status === "pending_approval" && (
                 <button
@@ -397,11 +443,14 @@ export default function AdminPage() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [loading, setLoading] = useState(true);
   const [accessDenied, setAccessDenied] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
   const load = useCallback(async () => {
+    setServerError(null);
+    setLoading(true);
     try {
       const res = await fetch("/api/admin/tournaments");
       if (res.status === 401 || res.status === 403) {
@@ -410,14 +459,15 @@ export default function AdminPage() {
         return;
       }
       if (!res.ok) {
-        // Server error — still stop the spinner and show something
+        const body = await res.json().catch(() => ({}));
+        setServerError(body.detail || body.error || `Server error (${res.status})`);
         setLoading(false);
         return;
       }
       const data = await res.json();
       setTournaments(data.tournaments ?? []);
-    } catch {
-      // Network error
+    } catch (e) {
+      setServerError(String(e));
     } finally {
       setLoading(false);
     }
@@ -465,6 +515,23 @@ export default function AdminPage() {
     return (
       <div className="min-h-screen bg-[#050509] flex items-center justify-center">
         <p className="text-gray-500 text-sm animate-pulse">Loading admin panel…</p>
+      </div>
+    );
+  }
+
+  if (serverError) {
+    return (
+      <div className="min-h-screen bg-[#050509] flex flex-col items-center justify-center gap-4 px-6">
+        <p className="text-red-400 text-sm font-medium">⚠ Failed to load admin panel.</p>
+        <p className="text-gray-500 text-xs text-center max-w-md font-mono bg-[#0b0b11] border border-gray-800 rounded-md px-4 py-3">
+          {serverError}
+        </p>
+        <button
+          onClick={() => void load()}
+          className="mt-2 rounded-md bg-purple-600/90 hover:bg-purple-500 px-4 py-2 text-xs text-white transition"
+        >
+          Retry
+        </button>
       </div>
     );
   }

@@ -28,16 +28,26 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const rows = await sql/*sql*/`
+  const rows = await sql`
     SELECT
-      m.id, m.status, m.started_at, m.finished_at,
-      mp.score, mp.is_winner,
-      t.id AS tournament_id, t.name AS tournament_name, t.game, t.prize_pool
-    FROM match_participants mp
-    JOIN matches m ON m.id = mp.match_id
-    LEFT JOIN tournaments t ON t.id = m.tournament_id
-    WHERE mp.user_id = ${user.id}
-    ORDER BY m.started_at DESC NULLS LAST
+      t.id        AS id,
+      t.status,
+      t.start_time AS started_at,
+      t.end_time   AS finished_at,
+      t.id         AS tournament_id,
+      t.name       AS tournament_name,
+      t.game,
+      t.prize_pool,
+      res.prize_amount AS score,
+      CASE WHEN res.placement = 1 THEN true
+           WHEN t.status = 'completed' THEN false
+           ELSE NULL END AS is_winner
+    FROM tournament_registrations tr
+    JOIN tournaments t ON t.id = tr.tournament_id
+    LEFT JOIN tournament_results res
+      ON res.user_id = tr.user_id AND res.tournament_id = tr.tournament_id
+    WHERE tr.user_id = ${user.id}
+    ORDER BY t.start_time DESC NULLS LAST
     LIMIT 30
   `;
 

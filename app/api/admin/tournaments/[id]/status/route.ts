@@ -20,13 +20,13 @@ async function getAdmin() {
   } catch { return null; }
 }
 
-// POST /api/admin/tournaments/[id]/status  { action: "approve" | "start" | "end" | "cancel" }
+// POST /api/admin/tournaments/[id]/status  { action: "approve" | "start" | "end" | "cancel", room_id?: string, room_password?: string }
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const user = await getAdmin();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
-  const { action } = await req.json();
+  const { action, room_id, room_password } = await req.json();
 
   const statusMap: Record<string, string> = {
     approve: "upcoming",
@@ -38,17 +38,31 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const newStatus = statusMap[action];
   if (!newStatus) return NextResponse.json({ error: "Invalid action" }, { status: 400 });
 
-  const extraFields = action === "end"
+  // Build extra time fields
+  const timeField = action === "end"
     ? sql`end_time = NOW(),`
     : action === "start"
     ? sql`start_time = COALESCE(start_time, NOW()),`
     : sql``;
 
-  await sql`
-    UPDATE tournaments
-    SET ${extraFields} status = ${newStatus}
-    WHERE id = ${Number(id)}
-  `;
+  // Save room details when approving or starting
+  if ((action === "approve" || action === "start") && (room_id || room_password)) {
+    await sql`
+      UPDATE tournaments
+      SET
+        ${timeField}
+        room_id = COALESCE(${room_id ?? null}, room_id),
+        room_password = COALESCE(${room_password ?? null}, room_password),
+        status = ${newStatus}
+      WHERE id = ${Number(id)}
+    `;
+  } else {
+    await sql`
+      UPDATE tournaments
+      SET ${timeField} status = ${newStatus}
+      WHERE id = ${Number(id)}
+    `;
+  }
 
   return NextResponse.json({ success: true, status: newStatus });
 }

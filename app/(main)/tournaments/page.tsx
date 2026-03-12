@@ -214,6 +214,48 @@ function SubmitTournamentModal({ onSubmitted, showToast }: {
 	);
 }
 
+/* Small "View Details" button used in the row-style upcoming list */
+function UpcomingRoomButton({ tournament: t }: { tournament: Tournament }) {
+	const [show, setShow] = useState(false);
+	return (
+		<>
+			<button
+				onClick={() => setShow(true)}
+				className="text-[11px] border border-yellow-500/50 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-300 px-3 py-1.5 rounded-md whitespace-nowrap transition"
+			>
+				🔑 Room Details
+			</button>
+			{show && (
+				<div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center px-4" onClick={() => setShow(false)}>
+					<div className="bg-[#0b0b11] border border-gray-800 rounded-xl p-6 w-full max-w-sm space-y-4" onClick={(e) => e.stopPropagation()}>
+						<div>
+							<h2 className="text-sm font-semibold text-gray-100">{t.name}</h2>
+							<p className="text-[11px] text-gray-500 mt-0.5">{t.game} · {t.status}</p>
+						</div>
+						<div className="rounded-md border border-yellow-500/30 bg-yellow-500/5 px-4 py-3 space-y-3">
+							<p className="text-[11px] text-yellow-400 font-semibold uppercase tracking-wide">🔑 Room Details</p>
+							{t.room_id && (
+								<div className="space-y-1">
+									<p className="text-[11px] text-gray-400">Room ID</p>
+									<p className="font-mono text-lg text-yellow-300 tracking-widest">{t.room_id}</p>
+								</div>
+							)}
+							{t.room_password && (
+								<div className="space-y-1">
+									<p className="text-[11px] text-gray-400">Password</p>
+									<p className="font-mono text-lg text-yellow-300 tracking-widest">{t.room_password}</p>
+								</div>
+							)}
+						</div>
+						<p className="text-[11px] text-gray-600">Only visible to registered players. Do not share.</p>
+						<button onClick={() => setShow(false)} className="w-full rounded-md border border-gray-700 text-xs py-2 text-gray-300 hover:bg-[#11111a] transition">Close</button>
+					</div>
+				</div>
+			)}
+		</>
+	);
+}
+
 function TournamentCard({
 	tournament: t,
 	joining,
@@ -223,6 +265,9 @@ function TournamentCard({
 	joining: boolean;
 	onJoin: () => void;
 }) {
+	const [showDetails, setShowDetails] = useState(false);
+	const hasRoom = (t.status === "upcoming" || t.status === "ongoing") && (t.room_id || t.room_password);
+
 	return (
 		<article className="rounded-lg border border-gray-800 bg-[#0b0b11] p-4 space-y-3 text-xs">
 			<div className="flex items-center justify-between">
@@ -248,16 +293,16 @@ function TournamentCard({
 					<div className="w-full rounded-md border border-emerald-500/40 text-emerald-400 text-xs py-2 text-center">
 						Registered ✓
 					</div>
-					{(t.status === "upcoming" || t.status === "ongoing") && (t.room_id || t.room_password) && (
-						<div className="rounded-md border border-yellow-500/30 bg-yellow-500/5 px-3 py-2 space-y-1">
-							<p className="text-[11px] text-yellow-400 font-medium uppercase tracking-wide">Room Details</p>
-							{t.room_id && (
-								<p className="text-xs text-gray-200">Room ID: <span className="font-mono text-yellow-300">{t.room_id}</span></p>
-							)}
-							{t.room_password && (
-								<p className="text-xs text-gray-200">Password: <span className="font-mono text-yellow-300">{t.room_password}</span></p>
-							)}
-						</div>
+					{hasRoom && (
+						<button
+							onClick={() => setShowDetails(true)}
+							className="w-full rounded-md border border-yellow-500/50 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-300 text-xs py-2 transition-colors font-medium"
+						>
+							🔑 View Room Details
+						</button>
+					)}
+					{!hasRoom && (t.status === "upcoming" || t.status === "ongoing") && (
+						<p className="text-center text-[11px] text-gray-600">Room details not set yet — check back soon.</p>
 					)}
 				</div>
 			) : (
@@ -268,6 +313,40 @@ function TournamentCard({
 				>
 					{joining ? "Joining…" : "Join now"}
 				</button>
+			)}
+
+			{/* Room Details Modal */}
+			{showDetails && (
+				<div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center px-4" onClick={() => setShowDetails(false)}>
+					<div className="bg-[#0b0b11] border border-gray-800 rounded-xl p-6 w-full max-w-sm space-y-4" onClick={(e) => e.stopPropagation()}>
+						<div>
+							<h2 className="text-sm font-semibold text-gray-100">{t.name}</h2>
+							<p className="text-[11px] text-gray-500 mt-0.5">{t.game} · {t.status}</p>
+						</div>
+						<div className="rounded-md border border-yellow-500/30 bg-yellow-500/5 px-4 py-3 space-y-3">
+							<p className="text-[11px] text-yellow-400 font-semibold uppercase tracking-wide">🔑 Room Details</p>
+							{t.room_id ? (
+								<div className="space-y-1">
+									<p className="text-[11px] text-gray-400">Room ID</p>
+									<p className="font-mono text-lg text-yellow-300 tracking-widest">{t.room_id}</p>
+								</div>
+							) : null}
+							{t.room_password ? (
+								<div className="space-y-1">
+									<p className="text-[11px] text-gray-400">Password</p>
+									<p className="font-mono text-lg text-yellow-300 tracking-widest">{t.room_password}</p>
+								</div>
+							) : null}
+						</div>
+						<p className="text-[11px] text-gray-600">These details are only visible to registered players. Do not share them.</p>
+						<button
+							onClick={() => setShowDetails(false)}
+							className="w-full rounded-md border border-gray-700 text-xs py-2 text-gray-300 hover:bg-[#11111a] transition"
+						>
+							Close
+						</button>
+					</div>
+				</div>
 			)}
 		</article>
 	);
@@ -471,9 +550,14 @@ export default function TournamentsPage() {
 											</p>
 										</div>
 										{t.is_registered ? (
-											<span className="text-[11px] text-emerald-400 border border-emerald-500/40 px-3 py-1.5 rounded-md whitespace-nowrap">
-												Registered ✓
-											</span>
+											<div className="flex flex-col gap-1.5 items-end">
+												<span className="text-[11px] text-emerald-400 border border-emerald-500/40 px-3 py-1.5 rounded-md whitespace-nowrap">
+													Registered ✓
+												</span>
+												{(t.room_id || t.room_password) && (
+													<UpcomingRoomButton tournament={t} />
+												)}
+											</div>
 										) : (
 											<button
 												onClick={() => handleJoin(t.id)}

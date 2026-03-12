@@ -22,7 +22,7 @@ export async function GET() {
     SELECT
       t.id, t.name, t.game, t.description, t.entry_fee, t.prize_pool,
       t.max_players, t.start_time, t.end_time, t.status,
-      t.room_id, t.room_password,
+      t.room_id, t.room_password, t.created_by,
       COUNT(tr.id)::int AS registered_count
     FROM tournaments t
     LEFT JOIN tournament_registrations tr ON tr.tournament_id = t.id
@@ -40,11 +40,34 @@ export async function GET() {
     userRegistrations = rows.map((r) => Number(r.tournament_id));
   }
 
+  // Get participants for all ongoing tournaments created by this user
+  let creatorParticipants: { tournament_id: number; user_id: number; username: string }[] = [];
+  if (user) {
+    const creatorOngoing = tournaments.filter(
+      (t) => Number(t.created_by) === user.id && t.status === "ongoing"
+    );
+    if (creatorOngoing.length > 0) {
+      const rows = await sql`
+        SELECT tr.tournament_id::int, u.id AS user_id, u.full_name AS username
+        FROM tournament_registrations tr
+        JOIN users u ON u.id = tr.user_id
+        ORDER BY tr.joined_at
+      `;
+      creatorParticipants = rows as typeof creatorParticipants;
+    }
+  }
+
   const result = tournaments.map((t) => {
     const isRegistered = userRegistrations.includes(Number(t.id));
+    const isCreator = user ? Number(t.created_by) === user.id : false;
+    const participants = isCreator
+      ? creatorParticipants.filter((p) => Number(p.tournament_id) === Number(t.id))
+      : [];
     return {
       ...t,
       is_registered: isRegistered,
+      is_creator: isCreator,
+      participants,
       // Only expose room details to registered players
       room_id: isRegistered ? t.room_id : null,
       room_password: isRegistered ? t.room_password : null,

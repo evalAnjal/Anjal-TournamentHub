@@ -48,14 +48,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     DO UPDATE SET placement = 1, prize_amount = ${prize}
   `;
 
-  // Mark all match participants for this tournament — set winner
-  await sql`
-    UPDATE match_participants mp
-    SET is_winner = (mp.user_id = ${winner_user_id})
-    FROM matches m
-    WHERE mp.match_id = m.id AND m.tournament_id = ${tournamentId}
-  `;
-
   // Credit prize to winner's wallet
   const [wallet] = await sql`
     INSERT INTO wallets (user_id) VALUES (${winner_user_id})
