@@ -22,6 +22,7 @@ export async function GET() {
     SELECT
       t.id, t.name, t.game, t.description, t.entry_fee, t.prize_pool,
       t.max_players, t.start_time, t.end_time, t.status,
+      t.room_id, t.room_password,
       COUNT(tr.id)::int AS registered_count
     FROM tournaments t
     LEFT JOIN tournament_registrations tr ON tr.tournament_id = t.id

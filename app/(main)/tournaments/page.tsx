@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 type Tournament = {
@@ -16,9 +16,12 @@ type Tournament = {
 	status: "upcoming" | "ongoing" | "completed" | "cancelled";
 	registered_count: number;
 	is_registered: boolean;
+	room_id: string | null;
+	room_password: string | null;
 };
 
 const GAME_FILTERS = ["All", "Valorant", "PUBG"] as const;
+const GAMES = ["Valorant", "PUBG", "CS2", "Apex Legends", "Free Fire", "Other"];
 type GameFilter = (typeof GAME_FILTERS)[number];
 
 function fmt(n: string | number) {
@@ -34,6 +37,176 @@ function fmtDate(iso: string | null) {
 		hour: "2-digit",
 		minute: "2-digit",
 	});
+}
+
+/* ─── Submit Tournament Modal (for all players) ─────────────────────── */
+function SubmitTournamentModal({ onSubmitted, showToast }: {
+	onSubmitted: () => void;
+	showToast: (msg: string, ok: boolean) => void;
+}) {
+	const [open, setOpen] = useState(false);
+	const [saving, setSaving] = useState(false);
+	const [error, setError] = useState("");
+	const [form, setForm] = useState({
+		name: "", game: "Valorant", description: "",
+		entry_fee: "", prize_pool: "", max_players: "", start_time: "",
+		room_id: "", room_password: "",
+	});
+
+	function set(k: string, v: string) { setForm((f) => ({ ...f, [k]: v })); }
+
+	async function handleSubmit() {
+		setError("");
+		if (!form.name.trim()) { setError("Tournament name is required"); return; }
+		setSaving(true);
+		const res = await fetch("/api/tournaments/create", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				...form,
+				entry_fee: Number(form.entry_fee) || 0,
+				prize_pool: Number(form.prize_pool) || 0,
+				max_players: Number(form.max_players) || null,
+				start_time: form.start_time || null,
+			}),
+		});
+		const data = await res.json();
+		setSaving(false);
+		if (!res.ok) { setError(data.error || "Failed to submit"); return; }
+		setOpen(false);
+		setForm({ name: "", game: "Valorant", description: "", entry_fee: "", prize_pool: "", max_players: "", start_time: "", room_id: "", room_password: "" });
+		showToast("Tournament submitted! Awaiting admin approval.", true);
+		onSubmitted();
+	}
+
+	return (
+		<>
+			<button
+				onClick={() => setOpen(true)}
+				className="rounded-md bg-purple-600/90 hover:bg-purple-500 px-4 py-2 text-sm text-white transition-colors"
+			>
+				+ Submit tournament
+			</button>
+
+			{open && (
+				<div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center px-4 overflow-y-auto">
+					<div className="bg-[#0b0b11] border border-gray-800 rounded-xl p-6 w-full max-w-lg space-y-4 my-8">
+						<div>
+							<h2 className="text-sm font-semibold text-gray-100">Submit a tournament</h2>
+							<p className="text-[11px] text-yellow-500/80 mt-1">⚠ Tournaments require admin approval before becoming visible to players.</p>
+						</div>
+
+						<div className="grid grid-cols-2 gap-3">
+							<div className="col-span-2">
+								<label className="text-[11px] text-gray-400 mb-1 block">Tournament name *</label>
+								<input
+									value={form.name}
+									onChange={(e) => set("name", e.target.value)}
+									placeholder="e.g. Valorant Cup #4"
+									className="w-full bg-[#050509] border border-gray-700 rounded-md px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-purple-500"
+								/>
+							</div>
+							<div>
+								<label className="text-[11px] text-gray-400 mb-1 block">Game *</label>
+								<select
+									value={form.game}
+									onChange={(e) => set("game", e.target.value)}
+									className="w-full bg-[#050509] border border-gray-700 rounded-md px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-purple-500"
+								>
+									{GAMES.map((g) => <option key={g}>{g}</option>)}
+								</select>
+							</div>
+							<div>
+								<label className="text-[11px] text-gray-400 mb-1 block">Max players</label>
+								<input
+									type="number"
+									value={form.max_players}
+									onChange={(e) => set("max_players", e.target.value)}
+									placeholder="e.g. 32"
+									className="w-full bg-[#050509] border border-gray-700 rounded-md px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-purple-500"
+								/>
+							</div>
+							<div>
+								<label className="text-[11px] text-gray-400 mb-1 block">Entry fee (NPR)</label>
+								<input
+									type="number"
+									value={form.entry_fee}
+									onChange={(e) => set("entry_fee", e.target.value)}
+									placeholder="0 = Free"
+									className="w-full bg-[#050509] border border-gray-700 rounded-md px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-purple-500"
+								/>
+							</div>
+							<div>
+								<label className="text-[11px] text-gray-400 mb-1 block">Prize pool (NPR)</label>
+								<input
+									type="number"
+									value={form.prize_pool}
+									onChange={(e) => set("prize_pool", e.target.value)}
+									placeholder="e.g. 50000"
+									className="w-full bg-[#050509] border border-gray-700 rounded-md px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-purple-500"
+								/>
+							</div>
+							<div className="col-span-2">
+								<label className="text-[11px] text-gray-400 mb-1 block">Start time</label>
+								<input
+									type="datetime-local"
+									value={form.start_time}
+									onChange={(e) => set("start_time", e.target.value)}
+									className="w-full bg-[#050509] border border-gray-700 rounded-md px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-purple-500"
+								/>
+							</div>
+							<div>
+								<label className="text-[11px] text-gray-400 mb-1 block">Room ID</label>
+								<input
+									value={form.room_id}
+									onChange={(e) => set("room_id", e.target.value)}
+									placeholder="e.g. 123456"
+									className="w-full bg-[#050509] border border-gray-700 rounded-md px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-purple-500"
+								/>
+							</div>
+							<div>
+								<label className="text-[11px] text-gray-400 mb-1 block">Room Password</label>
+								<input
+									value={form.room_password}
+									onChange={(e) => set("room_password", e.target.value)}
+									placeholder="e.g. abc123"
+									className="w-full bg-[#050509] border border-gray-700 rounded-md px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-purple-500"
+								/>
+							</div>
+							<div className="col-span-2">
+								<label className="text-[11px] text-gray-400 mb-1 block">Description</label>
+								<textarea
+									value={form.description}
+									onChange={(e) => set("description", e.target.value)}
+									rows={2}
+									placeholder="Optional description…"
+									className="w-full bg-[#050509] border border-gray-700 rounded-md px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-purple-500 resize-none"
+								/>
+							</div>
+						</div>
+
+						{error && <p className="text-xs text-red-400">{error}</p>}
+
+						<div className="flex gap-3 pt-1">
+							<button
+								onClick={() => { setOpen(false); setError(""); }}
+								className="flex-1 rounded-md border border-gray-700 text-xs py-2 text-gray-300 hover:bg-[#11111a] transition"
+							>
+								Cancel
+							</button>
+							<button
+								onClick={handleSubmit}
+								disabled={saving}
+								className="flex-1 rounded-md bg-purple-600/90 hover:bg-purple-500 text-xs py-2 text-white transition disabled:opacity-50"
+							>
+								{saving ? "Submitting…" : "Submit for approval"}
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
+		</>
+	);
 }
 
 function TournamentCard({
@@ -66,8 +239,21 @@ function TournamentCard({
 				{Number(t.entry_fee) === 0 ? "Free" : fmt(t.entry_fee)}
 			</p>
 			{t.is_registered ? (
-				<div className="w-full rounded-md border border-emerald-500/40 text-emerald-400 text-xs py-2 text-center">
-					Registered ✓
+				<div className="space-y-2">
+					<div className="w-full rounded-md border border-emerald-500/40 text-emerald-400 text-xs py-2 text-center">
+						Registered ✓
+					</div>
+					{(t.status === "upcoming" || t.status === "ongoing") && (t.room_id || t.room_password) && (
+						<div className="rounded-md border border-yellow-500/30 bg-yellow-500/5 px-3 py-2 space-y-1">
+							<p className="text-[11px] text-yellow-400 font-medium uppercase tracking-wide">Room Details</p>
+							{t.room_id && (
+								<p className="text-xs text-gray-200">Room ID: <span className="font-mono text-yellow-300">{t.room_id}</span></p>
+							)}
+							{t.room_password && (
+								<p className="text-xs text-gray-200">Password: <span className="font-mono text-yellow-300">{t.room_password}</span></p>
+							)}
+						</div>
+					)}
 				</div>
 			) : (
 				<button
@@ -173,16 +359,19 @@ export default function TournamentsPage() {
 			<main className="px-4 py-8 md:px-8 md:py-10">
 				<div className="max-w-5xl mx-auto space-y-8">
 					{/* Hero */}
-					<header className="space-y-2">
-						<p className="text-xs uppercase tracking-wide text-purple-400">
-							Tournaments
-						</p>
-						<h1 className="text-2xl md:text-3xl font-semibold">
-							Browse tournaments
-						</h1>
-						<p className="text-sm text-gray-400">
-							Join live events or register for upcoming tournaments.
-						</p>
+					<header className="flex items-start justify-between gap-4 flex-wrap">
+						<div className="space-y-1">
+							<p className="text-xs uppercase tracking-wide text-purple-400">
+								Tournaments
+							</p>
+							<h1 className="text-2xl md:text-3xl font-semibold">
+								Browse tournaments
+							</h1>
+							<p className="text-sm text-gray-400">
+								Join live events or register for upcoming tournaments.
+							</p>
+						</div>
+						<SubmitTournamentModal onSubmitted={() => void load()} showToast={showToast} />
 					</header>
 
 					{/* Filters */}

@@ -13,7 +13,9 @@ async function getAdmin() {
   if (!token) return null;
   try {
     const user = jwt.verify(token, process.env.JWT_SECRET!) as UserJwtPayload;
-    if (user.role !== "admin") return null;
+    // Always check role from DB so existing JWTs without role still work
+    const rows = await sql`SELECT role FROM users WHERE id = ${user.id} LIMIT 1`;
+    if (!rows[0] || rows[0].role !== "admin") return null;
     return user;
   } catch { return null; }
 }

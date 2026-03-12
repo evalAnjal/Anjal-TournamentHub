@@ -55,6 +55,7 @@ function CreateForm({ onCreated }: { onCreated: () => void }) {
   const [form, setForm] = useState({
     name: "", game: "Valorant", description: "",
     entry_fee: "", prize_pool: "", max_players: "", start_time: "",
+    room_id: "", room_password: "",
   });
 
   function set(k: string, v: string) { setForm((f) => ({ ...f, [k]: v })); }
@@ -78,7 +79,7 @@ function CreateForm({ onCreated }: { onCreated: () => void }) {
     setSaving(false);
     if (!res.ok) { setError(data.error || "Failed to create"); return; }
     setOpen(false);
-    setForm({ name: "", game: "Valorant", description: "", entry_fee: "", prize_pool: "", max_players: "", start_time: "" });
+    setForm({ name: "", game: "Valorant", description: "", entry_fee: "", prize_pool: "", max_players: "", start_time: "", room_id: "", room_password: "" });
     onCreated();
   }
 
@@ -157,6 +158,26 @@ function CreateForm({ onCreated }: { onCreated: () => void }) {
                   type="datetime-local"
                   value={form.start_time}
                   onChange={(e) => set("start_time", e.target.value)}
+                  className="w-full bg-[#050509] border border-gray-700 rounded-md px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-purple-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] text-gray-400 mb-1 block">Room ID</label>
+                <input
+                  value={form.room_id}
+                  onChange={(e) => set("room_id", e.target.value)}
+                  placeholder="e.g. 123456"
+                  className="w-full bg-[#050509] border border-gray-700 rounded-md px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-purple-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] text-gray-400 mb-1 block">Room Password</label>
+                <input
+                  value={form.room_password}
+                  onChange={(e) => set("room_password", e.target.value)}
+                  placeholder="e.g. abc123"
                   className="w-full bg-[#050509] border border-gray-700 rounded-md px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-purple-500"
                 />
               </div>
@@ -370,17 +391,22 @@ export default function AdminPage() {
   const router = useRouter();
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [loading, setLoading] = useState(true);
+  const [accessDenied, setAccessDenied] = useState(false);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
   const load = useCallback(async () => {
     const res = await fetch("/api/admin/tournaments");
-    if (res.status === 401) { router.push("/home"); return; }
+    if (res.status === 401) {
+      setLoading(false);
+      setAccessDenied(true);
+      return;
+    }
     const data = await res.json();
     setTournaments(data.tournaments ?? []);
     setLoading(false);
-  }, [router]);
+  }, []);
 
   useEffect(() => { void load(); }, [load]);
 
@@ -404,6 +430,21 @@ export default function AdminPage() {
     completed: tournaments.filter((t) => t.status === "completed").length,
     cancelled: tournaments.filter((t) => t.status === "cancelled").length,
   };
+
+  if (accessDenied) {
+    return (
+      <div className="min-h-screen bg-[#050509] flex flex-col items-center justify-center gap-4">
+        <p className="text-red-400 text-sm font-medium">⛔ Access denied — admin only.</p>
+        <p className="text-gray-500 text-xs">Your account does not have admin privileges.</p>
+        <button
+          onClick={() => router.push("/home")}
+          className="mt-2 rounded-md border border-gray-700 px-4 py-2 text-xs text-gray-300 hover:bg-[#11111a] transition"
+        >
+          ← Go home
+        </button>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
