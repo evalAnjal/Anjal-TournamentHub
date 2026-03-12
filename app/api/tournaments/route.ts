@@ -40,10 +40,16 @@ export async function GET() {
     userRegistrations = rows.map((r) => Number(r.tournament_id));
   }
 
-  const result = tournaments.map((t) => ({
-    ...t,
-    is_registered: userRegistrations.includes(Number(t.id)),
-  }));
+  const result = tournaments.map((t) => {
+    const isRegistered = userRegistrations.includes(Number(t.id));
+    return {
+      ...t,
+      is_registered: isRegistered,
+      // Only expose room details to registered players
+      room_id: isRegistered ? t.room_id : null,
+      room_password: isRegistered ? t.room_password : null,
+    };
+  });
 
   return NextResponse.json({ tournaments: result });
 }

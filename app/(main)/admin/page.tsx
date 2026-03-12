@@ -64,23 +64,28 @@ function CreateForm({ onCreated }: { onCreated: () => void }) {
     setError("");
     if (!form.name.trim()) { setError("Tournament name is required"); return; }
     setSaving(true);
-    const res = await fetch("/api/tournaments/create", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...form,
-        entry_fee: Number(form.entry_fee) || 0,
-        prize_pool: Number(form.prize_pool) || 0,
-        max_players: Number(form.max_players) || null,
-        start_time: form.start_time || null,
-      }),
-    });
-    const data = await res.json();
-    setSaving(false);
-    if (!res.ok) { setError(data.error || "Failed to create"); return; }
-    setOpen(false);
-    setForm({ name: "", game: "Valorant", description: "", entry_fee: "", prize_pool: "", max_players: "", start_time: "", room_id: "", room_password: "" });
-    onCreated();
+    try {
+      const res = await fetch("/api/tournaments/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...form,
+          entry_fee: Number(form.entry_fee) || 0,
+          prize_pool: Number(form.prize_pool) || 0,
+          max_players: Number(form.max_players) || null,
+          start_time: form.start_time || null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || `Server error (${res.status})`); return; }
+      setOpen(false);
+      setForm({ name: "", game: "Valorant", description: "", entry_fee: "", prize_pool: "", max_players: "", start_time: "", room_id: "", room_password: "" });
+      onCreated();
+    } catch (e) {
+      setError("Network error: " + String(e));
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -397,15 +402,25 @@ export default function AdminPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
   const load = useCallback(async () => {
-    const res = await fetch("/api/admin/tournaments");
-    if (res.status === 401) {
+    try {
+      const res = await fetch("/api/admin/tournaments");
+      if (res.status === 401 || res.status === 403) {
+        setAccessDenied(true);
+        setLoading(false);
+        return;
+      }
+      if (!res.ok) {
+        // Server error — still stop the spinner and show something
+        setLoading(false);
+        return;
+      }
+      const data = await res.json();
+      setTournaments(data.tournaments ?? []);
+    } catch {
+      // Network error
+    } finally {
       setLoading(false);
-      setAccessDenied(true);
-      return;
     }
-    const data = await res.json();
-    setTournaments(data.tournaments ?? []);
-    setLoading(false);
   }, []);
 
   useEffect(() => { void load(); }, [load]);

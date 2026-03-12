@@ -59,24 +59,29 @@ function SubmitTournamentModal({ onSubmitted, showToast }: {
 		setError("");
 		if (!form.name.trim()) { setError("Tournament name is required"); return; }
 		setSaving(true);
-		const res = await fetch("/api/tournaments/create", {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({
-				...form,
-				entry_fee: Number(form.entry_fee) || 0,
-				prize_pool: Number(form.prize_pool) || 0,
-				max_players: Number(form.max_players) || null,
-				start_time: form.start_time || null,
-			}),
-		});
-		const data = await res.json();
-		setSaving(false);
-		if (!res.ok) { setError(data.error || "Failed to submit"); return; }
-		setOpen(false);
-		setForm({ name: "", game: "Valorant", description: "", entry_fee: "", prize_pool: "", max_players: "", start_time: "", room_id: "", room_password: "" });
-		showToast("Tournament submitted! Awaiting admin approval.", true);
-		onSubmitted();
+		try {
+			const res = await fetch("/api/tournaments/create", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					...form,
+					entry_fee: Number(form.entry_fee) || 0,
+					prize_pool: Number(form.prize_pool) || 0,
+					max_players: Number(form.max_players) || null,
+					start_time: form.start_time || null,
+				}),
+			});
+			const data = await res.json();
+			if (!res.ok) { setError(data.error || `Server error (${res.status})`); return; }
+			setOpen(false);
+			setForm({ name: "", game: "Valorant", description: "", entry_fee: "", prize_pool: "", max_players: "", start_time: "", room_id: "", room_password: "" });
+			showToast("Tournament submitted! Awaiting admin approval.", true);
+			onSubmitted();
+		} catch (e) {
+			setError("Network error: " + String(e));
+		} finally {
+			setSaving(false);
+		}
 	}
 
 	return (

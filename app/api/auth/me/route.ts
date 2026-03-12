@@ -13,14 +13,14 @@ export interface UserJwtPayload {
 
 export async function GET(){
    const cookieStore = await cookies();
-       const token = cookieStore.get('session')?.value;
-   
-       if (!token) { return NextResponse.json({ user: null }, { status: 401 }); }
-   
-       const user = jwt.verify(token,process.env.JWT_SECRET!) as UserJwtPayload
-       return NextResponse.json({
-        user
-       });
-    
+   const token = cookieStore.get('session')?.value;
 
+   if (!token) { return NextResponse.json({ user: null }, { status: 401 }); }
+
+   try {
+     const user = jwt.verify(token, process.env.JWT_SECRET!) as UserJwtPayload;
+     return NextResponse.json({ user });
+   } catch {
+     return NextResponse.json({ user: null }, { status: 401 });
+   }
 }
