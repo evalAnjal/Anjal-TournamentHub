@@ -16,8 +16,11 @@ type Tournament = {
 	status: "upcoming" | "ongoing" | "completed" | "cancelled";
 	registered_count: number;
 	is_registered: boolean;
+	is_creator: boolean;
+	has_dispute: boolean;
 	room_id: string | null;
 	room_password: string | null;
+	participants: { user_id: number; username: string }[];
 };
 
 const GAME_FILTERS = ["All", "Valorant", "PUBG"] as const;
@@ -214,9 +217,311 @@ function SubmitTournamentModal({ onSubmitted, showToast }: {
 	);
 }
 
+/* Start Tournament modal — for the creator to set room details and go live */
+function StartTournamentModal({ tournament: t, onStarted, showToast }: {
+	tournament: Tournament;
+	onStarted: () => void;
+	showToast: (msg: string, ok: boolean) => void;
+}) {
+	const [open, setOpen] = useState(false);
+	const [roomId, setRoomId] = useState(t.room_id ?? "");
+	const [roomPassword, setRoomPassword] = useState(t.room_password ?? "");
+	const [saving, setSaving] = useState(false);
+	const [error, setError] = useState("");
+
+	async function handleStart() {
+		setError("");
+		setSaving(true);
+		try {
+			const res = await fetch(`/api/tournaments/${t.id}/start`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					room_id: roomId.trim() || null,
+					room_password: roomPassword.trim() || null,
+				}),
+			});
+			const data = await res.json();
+			if (!res.ok) { setError(data.error || `Error (${res.status})`); return; }
+			setOpen(false);
+			showToast("Tournament is now LIVE! Room details sent to players.", true);
+			onStarted();
+		} catch (e) {
+			setError("Network error: " + String(e));
+		} finally {
+			setSaving(false);
+		}
+	}
+
+	return (
+		<>
+			<button
+				onClick={() => setOpen(true)}
+				className="w-full rounded-md bg-emerald-600/90 hover:bg-emerald-500 text-xs py-2 text-white transition-colors font-medium"
+			>
+				▶ Start Tournament
+			</button>
+
+			{open && (
+				<div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center px-4" onClick={() => setOpen(false)}>
+					<div className="bg-[#0b0b11] border border-gray-800 rounded-xl p-6 w-full max-w-sm space-y-4" onClick={(e) => e.stopPropagation()}>
+						<div>
+							<h2 className="text-sm font-semibold text-gray-100">Start Tournament</h2>
+							<p className="text-[11px] text-gray-500 mt-0.5">{t.name} · {t.registered_count} players registered</p>
+						</div>
+
+						<div className="rounded-md border border-emerald-500/20 bg-emerald-500/5 px-3 py-2">
+							<p className="text-[11px] text-emerald-400">
+								Once started, the tournament goes <span className="font-semibold">LIVE</span>. Registered players will be able to see the room details.
+							</p>
+						</div>
+
+						<div className="space-y-3">
+							<p className="text-[11px] text-purple-300 font-medium">🔑 Set room details</p>
+							<div>
+								<label className="text-[10px] text-gray-400 mb-1 block">Room ID</label>
+								<input
+									value={roomId}
+									onChange={(e) => setRoomId(e.target.value)}
+									placeholder="e.g. 123456"
+									className="w-full bg-[#050509] border border-gray-700 rounded-md px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-purple-500"
+								/>
+							</div>
+							<div>
+								<label className="text-[10px] text-gray-400 mb-1 block">Room Password</label>
+								<input
+									value={roomPassword}
+									onChange={(e) => setRoomPassword(e.target.value)}
+									placeholder="e.g. abc123"
+									className="w-full bg-[#050509] border border-gray-700 rounded-md px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-purple-500"
+								/>
+							</div>
+						</div>
+
+						{error && <p className="text-xs text-red-400">{error}</p>}
+
+						<div className="flex gap-3">
+							<button
+								onClick={() => { setOpen(false); setError(""); }}
+								className="flex-1 rounded-md border border-gray-700 text-xs py-2 text-gray-300 hover:bg-[#11111a] transition"
+							>
+								Cancel
+							</button>
+							<button
+								onClick={handleStart}
+								disabled={saving}
+								className="flex-1 rounded-md bg-emerald-600/90 hover:bg-emerald-500 text-xs py-2 text-white transition disabled:opacity-50"
+							>
+								{saving ? "Starting…" : "▶ Go Live"}
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
+		</>
+	);
+}
+
+/* Finish Tournament modal — for the creator to declare a winner and end the tournament */
+function FinishTournamentModal({ tournament: t, onFinished, showToast }: {
+	tournament: Tournament;
+	onFinished: () => void;
+	showToast: (msg: string, ok: boolean) => void;
+}) {
+	const [open, setOpen] = useState(false);
+	const [winnerId, setWinnerId] = useState("");
+	const [saving, setSaving] = useState(false);
+	const [error, setError] = useState("");
+
+	async function handleFinish() {
+		setError("");
+		if (!winnerId) { setError("Please select a winner"); return; }
+		setSaving(true);
+		try {
+			const res = await fetch(`/api/tournaments/${t.id}/finish`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ winner_user_id: Number(winnerId) }),
+			});
+			const data = await res.json();
+			if (!res.ok) { setError(data.error || `Error (${res.status})`); return; }
+			setOpen(false);
+			showToast(`Tournament finished! 🏆 NPR ${Number(data.prize_awarded).toLocaleString("en-IN")} awarded.`, true);
+			onFinished();
+		} catch (e) {
+			setError("Network error: " + String(e));
+		} finally {
+			setSaving(false);
+		}
+	}
+
+	return (
+		<>
+			<button
+				onClick={() => setOpen(true)}
+				className="w-full rounded-md bg-amber-600/90 hover:bg-amber-500 text-xs py-2 text-white transition-colors font-medium"
+			>
+				🏁 Finish & Declare Winner
+			</button>
+
+			{open && (
+				<div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center px-4" onClick={() => setOpen(false)}>
+					<div className="bg-[#0b0b11] border border-gray-800 rounded-xl p-6 w-full max-w-sm space-y-4" onClick={(e) => e.stopPropagation()}>
+						<div>
+							<h2 className="text-sm font-semibold text-gray-100">Finish Tournament</h2>
+							<p className="text-[11px] text-gray-500 mt-0.5">{t.name} · {t.registered_count} players registered</p>
+						</div>
+
+						<div className="rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2">
+							<p className="text-[11px] text-amber-400">
+								🏆 <span className="font-semibold">NPR {Number(t.prize_pool).toLocaleString("en-IN")}</span> will be awarded to the winner and the tournament will be marked as completed.
+							</p>
+						</div>
+
+						<div>
+							<label className="text-[11px] text-gray-400 mb-1 block">Select winner *</label>
+							{t.participants.length === 0 ? (
+								<p className="text-xs text-gray-600">No players registered yet.</p>
+							) : (
+								<select
+									value={winnerId}
+									onChange={(e) => setWinnerId(e.target.value)}
+									className="w-full bg-[#050509] border border-gray-700 rounded-md px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-purple-500"
+								>
+									<option value="">— Select a player —</option>
+									{t.participants.map((p) => (
+										<option key={p.user_id} value={p.user_id}>{p.username}</option>
+									))}
+								</select>
+							)}
+						</div>
+
+						{error && <p className="text-xs text-red-400">{error}</p>}
+
+						<div className="flex gap-3">
+							<button
+								onClick={() => { setOpen(false); setError(""); setWinnerId(""); }}
+								className="flex-1 rounded-md border border-gray-700 text-xs py-2 text-gray-300 hover:bg-[#11111a] transition"
+							>
+								Cancel
+							</button>
+							<button
+								onClick={handleFinish}
+								disabled={saving || !winnerId}
+								className="flex-1 rounded-md bg-amber-600/90 hover:bg-amber-500 text-xs py-2 text-white transition disabled:opacity-50"
+							>
+								{saving ? "Finishing…" : "Confirm & Finish"}
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
+		</>
+	);
+}
+
+/* Raise Issue modal — for registered players / creator on a completed tournament */
+function RaiseIssueModal({ tournament: t, onRaised, showToast }: {
+	tournament: Tournament;
+	onRaised: () => void;
+	showToast: (msg: string, ok: boolean) => void;
+}) {
+	const [open, setOpen] = useState(false);
+	const [reason, setReason] = useState("");
+	const [saving, setSaving] = useState(false);
+	const [error, setError] = useState("");
+
+	async function handleSubmit() {
+		setError("");
+		if (!reason.trim()) { setError("Please describe the issue"); return; }
+		setSaving(true);
+		try {
+			const res = await fetch(`/api/tournaments/${t.id}/dispute`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ reason: reason.trim() }),
+			});
+			const data = await res.json();
+			if (!res.ok) { setError(data.error || `Error (${res.status})`); return; }
+			setOpen(false);
+			setReason("");
+			showToast("Issue raised. An admin will review it shortly.", true);
+			onRaised();
+		} catch (e) {
+			setError("Network error: " + String(e));
+		} finally {
+			setSaving(false);
+		}
+	}
+
+	if (t.has_dispute) {
+		return (
+			<span className="text-[11px] border border-orange-500/40 bg-orange-500/10 text-orange-300 px-3 py-1.5 rounded-md whitespace-nowrap">
+				⚠ Issue raised
+			</span>
+		);
+	}
+
+	return (
+		<>
+			<button
+				onClick={() => setOpen(true)}
+				className="text-[11px] border border-red-500/40 bg-red-500/5 hover:bg-red-500/15 text-red-400 px-3 py-1.5 rounded-md whitespace-nowrap transition"
+			>
+				⚑ Raise Issue
+			</button>
+
+			{open && (
+				<div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center px-4" onClick={() => setOpen(false)}>
+					<div className="bg-[#0b0b11] border border-gray-800 rounded-xl p-6 w-full max-w-sm space-y-4" onClick={(e) => e.stopPropagation()}>
+						<div>
+							<h2 className="text-sm font-semibold text-gray-100">Raise an Issue</h2>
+							<p className="text-[11px] text-gray-500 mt-0.5">{t.name} · {t.game}</p>
+						</div>
+
+						<div className="rounded-md border border-red-500/20 bg-red-500/5 px-3 py-2">
+							<p className="text-[11px] text-red-400">
+								Describe your conflict or dispute. An admin will review and respond.
+							</p>
+						</div>
+
+						<div>
+							<label className="text-[11px] text-gray-400 mb-1 block">Reason *</label>
+							<textarea
+								value={reason}
+								onChange={(e) => setReason(e.target.value)}
+								rows={3}
+								placeholder="e.g. The declared winner was not in the game, I have screenshots…"
+								className="w-full bg-[#050509] border border-gray-700 rounded-md px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-red-500 resize-none"
+							/>
+						</div>
+
+						{error && <p className="text-xs text-red-400">{error}</p>}
+
+						<div className="flex gap-3">
+							<button
+								onClick={() => { setOpen(false); setError(""); setReason(""); }}
+								className="flex-1 rounded-md border border-gray-700 text-xs py-2 text-gray-300 hover:bg-[#11111a] transition"
+							>
+								Cancel
+							</button>
+							<button
+								onClick={handleSubmit}
+								disabled={saving || !reason.trim()}
+								className="flex-1 rounded-md bg-red-600/90 hover:bg-red-500 text-xs py-2 text-white transition disabled:opacity-50"
+							>
+								{saving ? "Submitting…" : "Submit Issue"}
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
+		</>
+	);
+}
+
 /* Small "View Details" button used in the row-style upcoming list */
-function UpcomingRoomButton({ tournament: t }: { tournament: Tournament }) {
-	const [show, setShow] = useState(false);
+function UpcomingRoomButton({ tournament: t }: { tournament: Tournament }) {	const [show, setShow] = useState(false);
 	return (
 		<>
 			<button
@@ -260,13 +565,18 @@ function TournamentCard({
 	tournament: t,
 	joining,
 	onJoin,
+	onFinished,
+	showToast,
 }: {
 	tournament: Tournament;
 	joining: boolean;
 	onJoin: () => void;
+	onFinished: () => void;
+	showToast: (msg: string, ok: boolean) => void;
 }) {
 	const [showDetails, setShowDetails] = useState(false);
 	const hasRoom = (t.status === "upcoming" || t.status === "ongoing") && (t.room_id || t.room_password);
+	const canRaiseIssue = t.status === "completed" && (t.is_registered || t.is_creator);
 
 	return (
 		<article className="rounded-lg border border-gray-800 bg-[#0b0b11] p-4 space-y-3 text-xs">
@@ -288,7 +598,42 @@ function TournamentCard({
 				{" · "}entry{" "}
 				{Number(t.entry_fee) === 0 ? "Free" : fmt(t.entry_fee)}
 			</p>
-			{t.is_registered ? (
+
+			{/* Creator controls — only for upcoming/ongoing */}
+			{t.is_creator && (t.status === "upcoming" || t.status === "ongoing") && (
+				<div className="pt-1 border-t border-gray-800 space-y-2">
+					<p className="text-[11px] text-purple-400">You created this tournament</p>
+
+					{/* Current room details (if already set) */}
+					{hasRoom && (
+						<div className="rounded-md border border-yellow-500/30 bg-yellow-500/5 px-3 py-2 space-y-1">
+							<p className="text-[11px] text-yellow-400 font-medium">Current room details</p>
+							{t.room_id && <p className="text-xs text-gray-200">ID: <span className="font-mono text-yellow-300">{t.room_id}</span></p>}
+							{t.room_password && <p className="text-xs text-gray-200">Password: <span className="font-mono text-yellow-300">{t.room_password}</span></p>}
+						</div>
+					)}
+
+					{t.status === "upcoming" && (
+						<StartTournamentModal tournament={t} onStarted={onFinished} showToast={showToast} />
+					)}
+					{t.status === "ongoing" && (
+						<FinishTournamentModal tournament={t} onFinished={onFinished} showToast={showToast} />
+					)}
+				</div>
+			)}
+
+			{/* Completed — show result badge + raise issue */}
+			{t.status === "completed" && canRaiseIssue && (
+				<div className="pt-1 border-t border-gray-800 flex items-center justify-between gap-2 flex-wrap">
+					<span className="text-[11px] text-gray-500 border border-gray-700 px-2 py-0.5 rounded-full">
+						completed
+					</span>
+					<RaiseIssueModal tournament={t} onRaised={onFinished} showToast={showToast} />
+				</div>
+			)}
+
+			{/* Non-creator registered player view */}
+			{t.is_registered && !t.is_creator && t.status !== "completed" ? (
 				<div className="space-y-2">
 					<div className="w-full rounded-md border border-emerald-500/40 text-emerald-400 text-xs py-2 text-center">
 						Registered ✓
@@ -305,7 +650,7 @@ function TournamentCard({
 						<p className="text-center text-[11px] text-gray-600">Room details not set yet — check back soon.</p>
 					)}
 				</div>
-			) : (
+			) : !t.is_creator && t.status !== "completed" ? (
 				<button
 					onClick={onJoin}
 					disabled={joining}
@@ -313,7 +658,7 @@ function TournamentCard({
 				>
 					{joining ? "Joining…" : "Join now"}
 				</button>
-			)}
+			) : null}
 
 			{/* Room Details Modal */}
 			{showDetails && (
@@ -508,6 +853,8 @@ export default function TournamentsPage() {
 										tournament={t}
 										joining={joining === t.id}
 										onJoin={() => handleJoin(t.id)}
+										onFinished={() => void load()}
+										showToast={showToast}
 									/>
 								))}
 							</div>
@@ -529,7 +876,7 @@ export default function TournamentsPage() {
 								{upcoming.map((t) => (
 									<article
 										key={t.id}
-										className="flex items-center justify-between px-4 py-3 gap-4"
+										className="flex items-start justify-between px-4 py-3 gap-4"
 									>
 										<div className="space-y-0.5">
 											<p className="text-gray-200 text-sm">{t.name}</p>
@@ -549,24 +896,33 @@ export default function TournamentsPage() {
 												registered
 											</p>
 										</div>
-										{t.is_registered ? (
-											<div className="flex flex-col gap-1.5 items-end">
-												<span className="text-[11px] text-emerald-400 border border-emerald-500/40 px-3 py-1.5 rounded-md whitespace-nowrap">
-													Registered ✓
-												</span>
-												{(t.room_id || t.room_password) && (
-													<UpcomingRoomButton tournament={t} />
-												)}
-											</div>
-										) : (
-											<button
-												onClick={() => handleJoin(t.id)}
-												disabled={joining === t.id}
-												className="rounded-md bg-purple-600/90 hover:bg-purple-500 px-3 py-1.5 text-[11px] text-white transition-colors whitespace-nowrap disabled:opacity-50"
-											>
-												{joining === t.id ? "Joining…" : "Join"}
-											</button>
-										)}
+										<div className="flex flex-col gap-1.5 items-end shrink-0">
+											{t.is_creator ? (
+												<>
+													<span className="text-[11px] text-purple-400 border border-purple-500/40 px-3 py-1.5 rounded-md whitespace-nowrap">
+														Your tournament
+													</span>
+													<StartTournamentModal tournament={t} onStarted={() => void load()} showToast={showToast} />
+												</>
+											) : t.is_registered ? (
+												<>
+													<span className="text-[11px] text-emerald-400 border border-emerald-500/40 px-3 py-1.5 rounded-md whitespace-nowrap">
+														Registered ✓
+													</span>
+													{(t.room_id || t.room_password) && (
+														<UpcomingRoomButton tournament={t} />
+													)}
+												</>
+											) : (
+												<button
+													onClick={() => handleJoin(t.id)}
+													disabled={joining === t.id}
+													className="rounded-md bg-purple-600/90 hover:bg-purple-500 px-3 py-1.5 text-[11px] text-white transition-colors whitespace-nowrap disabled:opacity-50"
+												>
+													{joining === t.id ? "Joining…" : "Join"}
+												</button>
+											)}
+										</div>
 									</article>
 								))}
 							</div>
@@ -593,15 +949,24 @@ export default function TournamentsPage() {
 												{fmt(t.prize_pool)} prize pool
 											</p>
 										</div>
-										<span
-											className={`text-[11px] px-2 py-0.5 rounded-full border ${
-												t.status === "completed"
-													? "border-gray-700 text-gray-500"
-													: "border-red-900/50 text-red-500/70"
-											}`}
-										>
-											{t.status}
-										</span>
+										<div className="flex flex-col items-end gap-1.5">
+											<span
+												className={`text-[11px] px-2 py-0.5 rounded-full border ${
+													t.status === "completed"
+														? "border-gray-700 text-gray-500"
+														: "border-red-900/50 text-red-500/70"
+												}`}
+											>
+												{t.status}
+											</span>
+											{t.status === "completed" && (t.is_registered || t.is_creator) && (
+												<RaiseIssueModal
+													tournament={t}
+													onRaised={() => void load()}
+													showToast={showToast}
+												/>
+											)}
+										</div>
 									</article>
 								))}
 							</div>

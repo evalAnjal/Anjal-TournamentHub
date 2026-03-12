@@ -40,13 +40,13 @@ export async function GET() {
     userRegistrations = rows.map((r) => Number(r.tournament_id));
   }
 
-  // Get participants for all ongoing tournaments created by this user
+  // Get participants for creator's active tournaments (upcoming/ongoing)
   let creatorParticipants: { tournament_id: number; user_id: number; username: string }[] = [];
   if (user) {
-    const creatorOngoing = tournaments.filter(
-      (t) => Number(t.created_by) === user.id && t.status === "ongoing"
+    const creatorActive = tournaments.filter(
+      (t) => Number(t.created_by) === user.id && (t.status === "ongoing" || t.status === "upcoming")
     );
-    if (creatorOngoing.length > 0) {
+    if (creatorActive.length > 0) {
       const rows = await sql`
         SELECT tr.tournament_id::int, u.id AS user_id, u.full_name AS username
         FROM tournament_registrations tr
@@ -57,20 +57,31 @@ export async function GET() {
     }
   }
 
+  // Fetch user's existing disputes so the UI can show "Already raised"
+  let userDisputeTournamentIds: number[] = [];
+  if (user) {
+    const rows = await sql`
+      SELECT tournament_id FROM tournament_disputes WHERE user_id = ${user.id}
+    `;
+    userDisputeTournamentIds = rows.map((r) => Number(r.tournament_id));
+  }
+
   const result = tournaments.map((t) => {
     const isRegistered = userRegistrations.includes(Number(t.id));
     const isCreator = user ? Number(t.created_by) === user.id : false;
     const participants = isCreator
       ? creatorParticipants.filter((p) => Number(p.tournament_id) === Number(t.id))
       : [];
+    const hasDispute = userDisputeTournamentIds.includes(Number(t.id));
     return {
       ...t,
       is_registered: isRegistered,
       is_creator: isCreator,
+      has_dispute: hasDispute,
       participants,
-      // Only expose room details to registered players
-      room_id: isRegistered ? t.room_id : null,
-      room_password: isRegistered ? t.room_password : null,
+      // Expose room details to registered players AND the creator
+      room_id: (isRegistered || isCreator) ? t.room_id : null,
+      room_password: (isRegistered || isCreator) ? t.room_password : null,
     };
   });
 

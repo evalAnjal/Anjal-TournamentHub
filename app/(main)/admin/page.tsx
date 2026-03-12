@@ -28,6 +28,20 @@ type Tournament = {
   room_password: string | null;
 };
 
+type Dispute = {
+  id: number;
+  reason: string;
+  status: "open" | "resolved" | "dismissed";
+  admin_note: string | null;
+  created_at: string;
+  user_id: number;
+  username: string;
+  email: string;
+  tournament_id: number;
+  tournament_name: string;
+  game: string;
+};
+
 const GAMES = ["Valorant", "PUBG", "CS2", "Apex Legends", "Free Fire", "Other"];
 
 function fmt(n: string | number) {
@@ -437,35 +451,142 @@ function TournamentCard({ t, onRefresh, showToast }: {
   );
 }
 
+/* ─── Dispute Card ───────────────────────────────────────────────────── */
+const DISPUTE_STATUS_COLORS: Record<string, string> = {
+  open: "text-red-300 border-red-500/40 bg-red-500/5",
+  resolved: "text-emerald-300 border-emerald-500/40 bg-emerald-500/5",
+  dismissed: "text-gray-500 border-gray-700 bg-gray-800/30",
+};
+
+function DisputeCard({ d, onRefresh, showToast }: {
+  d: Dispute;
+  onRefresh: () => void;
+  showToast: (msg: string, ok: boolean) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [note, setNote] = useState(d.admin_note ?? "");
+  const [status, setStatus] = useState<"open" | "resolved" | "dismissed">(d.status);
+
+  async function handleUpdate() {
+    setSaving(true);
+    const res = await fetch("/api/admin/disputes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: d.id, status, admin_note: note.trim() || null }),
+    });
+    const data = await res.json();
+    setSaving(false);
+    if (!res.ok) { showToast(data.error || "Failed", false); return; }
+    showToast("Dispute updated", true);
+    onRefresh();
+  }
+
+  return (
+    <article className="rounded-lg border border-gray-800 bg-[#0b0b11] overflow-hidden">
+      <div className="flex items-start justify-between px-4 py-3 gap-4">
+        <div className="min-w-0 space-y-0.5">
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="text-sm text-gray-100 font-medium">{d.tournament_name}</p>
+            <span className={`text-[10px] border px-2 py-0.5 rounded-full ${DISPUTE_STATUS_COLORS[d.status]}`}>
+              {d.status}
+            </span>
+          </div>
+          <p className="text-[11px] text-gray-500">{d.game} · raised by <span className="text-gray-300">{d.username}</span> ({d.email})</p>
+          <p className="text-[11px] text-gray-400 mt-1 line-clamp-2">{d.reason}</p>
+        </div>
+        <button
+          onClick={() => setExpanded((v) => !v)}
+          className="text-[11px] border border-gray-700 px-3 py-1.5 rounded-md text-gray-400 hover:text-gray-200 hover:border-gray-600 transition whitespace-nowrap shrink-0"
+        >
+          {expanded ? "Close ↑" : "Review ↓"}
+        </button>
+      </div>
+
+      {expanded && (
+        <div className="border-t border-gray-800 px-4 py-4 space-y-3">
+          <div>
+            <p className="text-[11px] text-gray-400 mb-1 uppercase tracking-wide">Full reason</p>
+            <p className="text-xs text-gray-200 bg-[#050509] border border-gray-800 rounded-md px-3 py-2 whitespace-pre-wrap">{d.reason}</p>
+          </div>
+          <div>
+            <label className="text-[11px] text-gray-400 mb-1 block uppercase tracking-wide">Admin note (optional)</label>
+            <textarea
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              rows={2}
+              placeholder="Add a note for your records…"
+              className="w-full bg-[#050509] border border-gray-700 rounded-md px-3 py-2 text-xs text-gray-100 focus:outline-none focus:border-purple-500 resize-none"
+            />
+          </div>
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex gap-2">
+              {(["open", "resolved", "dismissed"] as const).map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setStatus(s)}
+                  className={`text-[11px] px-3 py-1.5 rounded-md border transition capitalize ${
+                    status === s
+                      ? DISPUTE_STATUS_COLORS[s] + " font-semibold"
+                      : "border-gray-700 text-gray-400 hover:border-gray-600"
+                  }`}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={handleUpdate}
+              disabled={saving}
+              className="ml-auto rounded-md bg-purple-600/90 hover:bg-purple-500 px-4 py-1.5 text-xs text-white transition disabled:opacity-50"
+            >
+              {saving ? "Saving…" : "Save"}
+            </button>
+          </div>
+        </div>
+      )}
+    </article>
+  );
+}
+
 /* ─── Admin Page ─────────────────────────────────────────────────────── */
 export default function AdminPage() {
   const router = useRouter();
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [disputes, setDisputes] = useState<Dispute[]>([]);
   const [loading, setLoading] = useState(true);
   const [accessDenied, setAccessDenied] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [activeTab, setActiveTab] = useState<"tournaments" | "disputes">("tournaments");
 
   const load = useCallback(async () => {
     setServerError(null);
     setLoading(true);
     try {
-      const res = await fetch("/api/admin/tournaments");
-      if (res.status === 401 || res.status === 403) {
+      const [tRes, dRes] = await Promise.all([
+        fetch("/api/admin/tournaments"),
+        fetch("/api/admin/disputes"),
+      ]);
+      if (tRes.status === 401 || tRes.status === 403) {
         setAccessDenied(true);
         setLoading(false);
         return;
       }
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        setServerError(body.detail || body.error || `Server error (${res.status})`);
+      if (!tRes.ok) {
+        const body = await tRes.json().catch(() => ({}));
+        setServerError(body.detail || body.error || `Server error (${tRes.status})`);
         setLoading(false);
         return;
       }
-      const data = await res.json();
-      setTournaments(data.tournaments ?? []);
+      const tData = await tRes.json();
+      setTournaments(tData.tournaments ?? []);
+      if (dRes.ok) {
+        const dData = await dRes.json();
+        setDisputes(dData.disputes ?? []);
+      }
     } catch (e) {
       setServerError(String(e));
     } finally {
@@ -495,6 +616,8 @@ export default function AdminPage() {
     completed: tournaments.filter((t) => t.status === "completed").length,
     cancelled: tournaments.filter((t) => t.status === "cancelled").length,
   };
+
+  const openDisputes = disputes.filter((d) => d.status === "open").length;
 
   if (accessDenied) {
     return (
@@ -552,54 +675,111 @@ export default function AdminPage() {
             <div>
               <p className="text-xs uppercase tracking-wide text-purple-400">Admin</p>
               <h1 className="text-2xl font-semibold">Tournament manager</h1>
-              <p className="text-sm text-gray-400 mt-0.5">Approve, manage tournaments and declare winners.</p>
+              <p className="text-sm text-gray-400 mt-0.5">Approve, manage tournaments and handle disputes.</p>
             </div>
-            <CreateForm onCreated={() => { void load(); showToast("Tournament submitted for approval!", true); }} />
-          </div>
-
-          {/* Summary stats */}
-          <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
-            {(["all", "pending_approval", "upcoming", "ongoing", "completed", "cancelled"] as const).map((s) => (
-              <button
-                key={s}
-                onClick={() => setStatusFilter(s)}
-                className={`rounded-lg border px-3 py-2 text-xs text-left transition-colors ${
-                  statusFilter === s
-                    ? "border-purple-500/60 bg-purple-600/20 text-purple-200"
-                    : "border-gray-800 bg-[#0b0b11] text-gray-400 hover:border-gray-700"
-                }`}
-              >
-                <p className="text-[11px] text-gray-500 capitalize">{s === "pending_approval" ? "Pending" : s}</p>
-                <p className="text-lg font-semibold text-gray-100">{counts[s]}</p>
-              </button>
-            ))}
-          </div>
-
-          {/* Search */}
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by name or game…"
-            className="w-full bg-[#0b0b11] border border-gray-800 rounded-md px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-purple-500"
-          />
-
-          {/* Tournament list */}
-          <div className="space-y-3">
-            {filtered.length === 0 ? (
-              <div className="rounded-lg border border-gray-800 bg-[#0b0b11] px-4 py-10 text-center">
-                <p className="text-gray-500 text-sm">No tournaments found.</p>
-              </div>
-            ) : (
-              filtered.map((t) => (
-                <TournamentCard
-                  key={t.id}
-                  t={t}
-                  onRefresh={() => void load()}
-                  showToast={showToast}
-                />
-              ))
+            {activeTab === "tournaments" && (
+              <CreateForm onCreated={() => { void load(); showToast("Tournament submitted for approval!", true); }} />
             )}
           </div>
+
+          {/* Tab bar */}
+          <div className="flex gap-2 border-b border-gray-800 pb-0">
+            <button
+              onClick={() => setActiveTab("tournaments")}
+              className={`px-4 py-2 text-xs font-medium transition border-b-2 -mb-px ${
+                activeTab === "tournaments"
+                  ? "border-purple-500 text-purple-300"
+                  : "border-transparent text-gray-400 hover:text-gray-200"
+              }`}
+            >
+              Tournaments ({tournaments.length})
+            </button>
+            <button
+              onClick={() => setActiveTab("disputes")}
+              className={`px-4 py-2 text-xs font-medium transition border-b-2 -mb-px flex items-center gap-1.5 ${
+                activeTab === "disputes"
+                  ? "border-red-500 text-red-300"
+                  : "border-transparent text-gray-400 hover:text-gray-200"
+              }`}
+            >
+              Disputes ({disputes.length})
+              {openDisputes > 0 && (
+                <span className="text-[10px] bg-red-500 text-white rounded-full px-1.5 py-0.5 font-semibold">
+                  {openDisputes}
+                </span>
+              )}
+            </button>
+          </div>
+
+          {/* ── Tournaments tab ── */}
+          {activeTab === "tournaments" && (
+            <>
+              {/* Summary stats */}
+              <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
+                {(["all", "pending_approval", "upcoming", "ongoing", "completed", "cancelled"] as const).map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => setStatusFilter(s)}
+                    className={`rounded-lg border px-3 py-2 text-xs text-left transition-colors ${
+                      statusFilter === s
+                        ? "border-purple-500/60 bg-purple-600/20 text-purple-200"
+                        : "border-gray-800 bg-[#0b0b11] text-gray-400 hover:border-gray-700"
+                    }`}
+                  >
+                    <p className="text-[11px] text-gray-500 capitalize">{s === "pending_approval" ? "Pending" : s}</p>
+                    <p className="text-lg font-semibold text-gray-100">{counts[s]}</p>
+                  </button>
+                ))}
+              </div>
+
+              {/* Search */}
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search by name or game…"
+                className="w-full bg-[#0b0b11] border border-gray-800 rounded-md px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-purple-500"
+              />
+
+              {/* Tournament list */}
+              <div className="space-y-3">
+                {filtered.length === 0 ? (
+                  <div className="rounded-lg border border-gray-800 bg-[#0b0b11] px-4 py-10 text-center">
+                    <p className="text-gray-500 text-sm">No tournaments found.</p>
+                  </div>
+                ) : (
+                  filtered.map((t) => (
+                    <TournamentCard
+                      key={t.id}
+                      t={t}
+                      onRefresh={() => void load()}
+                      showToast={showToast}
+                    />
+                  ))
+                )}
+              </div>
+            </>
+          )}
+
+          {/* ── Disputes tab ── */}
+          {activeTab === "disputes" && (
+            <div className="space-y-3">
+              {disputes.length === 0 ? (
+                <div className="rounded-lg border border-gray-800 bg-[#0b0b11] px-4 py-10 text-center">
+                  <p className="text-gray-500 text-sm">No disputes raised yet.</p>
+                </div>
+              ) : (
+                disputes.map((d) => (
+                  <DisputeCard
+                    key={d.id}
+                    d={d}
+                    onRefresh={() => void load()}
+                    showToast={showToast}
+                  />
+                ))
+              )}
+            </div>
+          )}
+
         </div>
       </main>
     </div>
