@@ -58,7 +58,7 @@ export default function WalletPage() {
   }, [router]);
 
   useEffect(() => {
-    loadWallet();
+  loadWallet();
   }, [loadWallet]);
 
   async function handleSubmit() {

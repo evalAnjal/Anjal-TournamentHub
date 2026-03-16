@@ -40,6 +40,8 @@ type Dispute = {
   tournament_id: number;
   tournament_name: string;
   game: string;
+  prize_pool: string;
+  participants: { user_id: number; username: string; is_winner: boolean }[];
 };
 
 const GAMES = ["Valorant", "PUBG", "CS2", "Apex Legends", "Free Fire", "Other"];
@@ -467,23 +469,42 @@ function DisputeCard({ d, onRefresh, showToast }: {
   const [saving, setSaving] = useState(false);
   const [note, setNote] = useState(d.admin_note ?? "");
   const [status, setStatus] = useState<"open" | "resolved" | "dismissed">(d.status);
+  const [newWinnerId, setNewWinnerId] = useState("");
+
+  // Current winner among participants
+  const currentWinner = d.participants.find((p) => p.is_winner);
 
   async function handleUpdate() {
     setSaving(true);
+    const body: Record<string, unknown> = {
+      id: d.id,
+      status,
+      admin_note: note.trim() || null,
+    };
+    // Only send new_winner_user_id when resolving and a different winner is selected
+    if (status === "resolved" && newWinnerId && Number(newWinnerId) !== currentWinner?.user_id) {
+      body.new_winner_user_id = Number(newWinnerId);
+    }
     const res = await fetch("/api/admin/disputes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: d.id, status, admin_note: note.trim() || null }),
+      body: JSON.stringify(body),
     });
     const data = await res.json();
     setSaving(false);
     if (!res.ok) { showToast(data.error || "Failed", false); return; }
-    showToast("Dispute updated", true);
+    if (body.new_winner_user_id) {
+      const winner = d.participants.find((p) => p.user_id === Number(newWinnerId));
+      showToast(`Dispute resolved. 🏆 ${fmt(d.prize_pool)} re-awarded to ${winner?.username ?? "new winner"}.`, true);
+    } else {
+      showToast("Dispute updated", true);
+    }
     onRefresh();
   }
 
   return (
     <article className="rounded-lg border border-gray-800 bg-[#0b0b11] overflow-hidden">
+      {/* Header */}
       <div className="flex items-start justify-between px-4 py-3 gap-4">
         <div className="min-w-0 space-y-0.5">
           <div className="flex items-center gap-2 flex-wrap">
@@ -492,7 +513,15 @@ function DisputeCard({ d, onRefresh, showToast }: {
               {d.status}
             </span>
           </div>
-          <p className="text-[11px] text-gray-500">{d.game} · raised by <span className="text-gray-300">{d.username}</span> ({d.email})</p>
+          <p className="text-[11px] text-gray-500">
+            {d.game} · raised by <span className="text-gray-300">{d.username}</span> ({d.email})
+          </p>
+          {currentWinner && (
+            <p className="text-[11px] text-emerald-400">
+              🏆 Current winner: <span className="font-medium">{currentWinner.username}</span>
+              {" · "}<span className="text-amber-300">{fmt(d.prize_pool)}</span>
+            </p>
+          )}
           <p className="text-[11px] text-gray-400 mt-1 line-clamp-2">{d.reason}</p>
         </div>
         <button
@@ -504,21 +533,66 @@ function DisputeCard({ d, onRefresh, showToast }: {
       </div>
 
       {expanded && (
-        <div className="border-t border-gray-800 px-4 py-4 space-y-3">
+        <div className="border-t border-gray-800 px-4 py-4 space-y-4">
+
+          {/* Full reason */}
           <div>
             <p className="text-[11px] text-gray-400 mb-1 uppercase tracking-wide">Full reason</p>
             <p className="text-xs text-gray-200 bg-[#050509] border border-gray-800 rounded-md px-3 py-2 whitespace-pre-wrap">{d.reason}</p>
           </div>
+
+          {/* Winner re-assignment — only shown when status = resolved */}
+          {status === "resolved" && d.participants.length > 0 && (
+            <div className="rounded-md border border-amber-500/30 bg-amber-500/5 px-4 py-3 space-y-2">
+              <p className="text-[11px] text-amber-300 font-semibold uppercase tracking-wide">
+                🏆 Re-assign winner (optional)
+              </p>
+              <p className="text-[11px] text-gray-400">
+                Leave blank to keep the current winner. Selecting a new winner will
+                <span className="text-red-400"> clawback the prize</span> from the old winner and
+                <span className="text-emerald-400"> award {fmt(d.prize_pool)}</span> to the new one.
+              </p>
+              <select
+                value={newWinnerId}
+                onChange={(e) => setNewWinnerId(e.target.value)}
+                className="w-full bg-[#050509] border border-gray-700 rounded-md px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-amber-500"
+              >
+                <option value="">— Keep current winner{currentWinner ? ` (${currentWinner.username})` : ""} —</option>
+                {d.participants.map((p) => (
+                  <option key={p.user_id} value={p.user_id}>
+                    {p.username}
+                    {p.is_winner ? " 🏆 current winner" : ""}
+                  </option>
+                ))}
+              </select>
+              {newWinnerId && Number(newWinnerId) !== currentWinner?.user_id && (
+                <div className="rounded-md border border-red-500/30 bg-red-500/5 px-3 py-2">
+                  <p className="text-[11px] text-red-400 font-medium">
+                    ⚠ This will clawback {fmt(d.prize_pool)} from{" "}
+                    <span className="font-semibold">{currentWinner?.username ?? "current winner"}</span>{" "}
+                    and award it to{" "}
+                    <span className="font-semibold text-emerald-400">
+                      {d.participants.find((p) => p.user_id === Number(newWinnerId))?.username}
+                    </span>.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Admin note */}
           <div>
             <label className="text-[11px] text-gray-400 mb-1 block uppercase tracking-wide">Admin note (optional)</label>
             <textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
               rows={2}
-              placeholder="Add a note for your records…"
+              placeholder="Add a note visible in your records…"
               className="w-full bg-[#050509] border border-gray-700 rounded-md px-3 py-2 text-xs text-gray-100 focus:outline-none focus:border-purple-500 resize-none"
             />
           </div>
+
+          {/* Status + save */}
           <div className="flex items-center gap-3 flex-wrap">
             <div className="flex gap-2">
               {(["open", "resolved", "dismissed"] as const).map((s) => (
@@ -540,7 +614,9 @@ function DisputeCard({ d, onRefresh, showToast }: {
               disabled={saving}
               className="ml-auto rounded-md bg-purple-600/90 hover:bg-purple-500 px-4 py-1.5 text-xs text-white transition disabled:opacity-50"
             >
-              {saving ? "Saving…" : "Save"}
+              {saving ? "Saving…" : status === "resolved" && newWinnerId && Number(newWinnerId) !== currentWinner?.user_id
+                ? "Resolve & Re-award 🏆"
+                : "Save"}
             </button>
           </div>
         </div>
