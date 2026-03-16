@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTheme } from '@/components/ThemeProvider';
 
 type Tournament = {
 	id: number;
@@ -98,97 +99,97 @@ function SubmitTournamentModal({ onSubmitted, showToast }: {
 
 			{open && (
 				<div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center px-4 overflow-y-auto">
-					<div className="bg-[#0b0b11] border border-gray-800 rounded-xl p-6 w-full max-w-lg space-y-4 my-8">
+					<div className="theme-bg-card theme-border rounded-xl p-6 w-full max-w-lg space-y-4 my-8">
 						<div>
-							<h2 className="text-sm font-semibold text-gray-100">Submit a tournament</h2>
+							<h2 className="text-sm font-semibold theme-text">Submit a tournament</h2>
 							<p className="text-[11px] text-yellow-500/80 mt-1">⚠ Tournaments require admin approval before becoming visible to players.</p>
 						</div>
 
 						<div className="grid grid-cols-2 gap-3">
 							<div className="col-span-2">
-								<label className="text-[11px] text-gray-400 mb-1 block">Tournament name *</label>
+								<label className="text-[11px] theme-text-muted mb-1 block">Tournament name *</label>
 								<input
 									value={form.name}
 									onChange={(e) => set("name", e.target.value)}
 									placeholder="e.g. Valorant Cup #4"
-									className="w-full bg-[#050509] border border-gray-700 rounded-md px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-purple-500"
+									className="w-full theme-bg theme-border rounded-md px-3 py-2 text-sm theme-text focus:outline-none focus:border-purple-500"
 								/>
 							</div>
 							<div>
-								<label className="text-[11px] text-gray-400 mb-1 block">Game *</label>
+								<label className="text-[11px] theme-text-muted mb-1 block">Game *</label>
 								<select
 									value={form.game}
 									onChange={(e) => set("game", e.target.value)}
-									className="w-full bg-[#050509] border border-gray-700 rounded-md px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-purple-500"
+									className="w-full theme-bg theme-border rounded-md px-3 py-2 text-sm theme-text focus:outline-none focus:border-purple-500"
 								>
 									{GAMES.map((g) => <option key={g}>{g}</option>)}
 								</select>
 							</div>
 							<div>
-								<label className="text-[11px] text-gray-400 mb-1 block">Max players</label>
+								<label className="text-[11px] theme-text-muted mb-1 block">Max players</label>
 								<input
 									type="number"
 									value={form.max_players}
 									onChange={(e) => set("max_players", e.target.value)}
 									placeholder="e.g. 32"
-									className="w-full bg-[#050509] border border-gray-700 rounded-md px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-purple-500"
+									className="w-full theme-bg theme-border rounded-md px-3 py-2 text-sm theme-text focus:outline-none focus:border-purple-500"
 								/>
 							</div>
 							<div>
-								<label className="text-[11px] text-gray-400 mb-1 block">Entry fee (NPR)</label>
+								<label className="text-[11px] theme-text-muted mb-1 block">Entry fee (NPR)</label>
 								<input
 									type="number"
 									value={form.entry_fee}
 									onChange={(e) => set("entry_fee", e.target.value)}
 									placeholder="0 = Free"
-									className="w-full bg-[#050509] border border-gray-700 rounded-md px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-purple-500"
+									className="w-full theme-bg theme-border rounded-md px-3 py-2 text-sm theme-text focus:outline-none focus:border-purple-500"
 								/>
 							</div>
 							<div>
-								<label className="text-[11px] text-gray-400 mb-1 block">Prize pool (NPR)</label>
+								<label className="text-[11px] theme-text-muted mb-1 block">Prize pool (NPR)</label>
 								<input
 									type="number"
 									value={form.prize_pool}
 									onChange={(e) => set("prize_pool", e.target.value)}
 									placeholder="e.g. 50000"
-									className="w-full bg-[#050509] border border-gray-700 rounded-md px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-purple-500"
+									className="w-full theme-bg theme-border rounded-md px-3 py-2 text-sm theme-text focus:outline-none focus:border-purple-500"
 								/>
 							</div>
 							<div className="col-span-2">
-								<label className="text-[11px] text-gray-400 mb-1 block">Start time</label>
+								<label className="text-[11px] theme-text-muted mb-1 block">Start time</label>
 								<input
 									type="datetime-local"
 									value={form.start_time}
 									onChange={(e) => set("start_time", e.target.value)}
-									className="w-full bg-[#050509] border border-gray-700 rounded-md px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-purple-500"
+									className="w-full theme-bg theme-border rounded-md px-3 py-2 text-sm theme-text focus:outline-none focus:border-purple-500"
 								/>
 							</div>
 							<div>
-								<label className="text-[11px] text-gray-400 mb-1 block">Room ID</label>
+								<label className="text-[11px] theme-text-muted mb-1 block">Room ID</label>
 								<input
 									value={form.room_id}
 									onChange={(e) => set("room_id", e.target.value)}
 									placeholder="e.g. 123456"
-									className="w-full bg-[#050509] border border-gray-700 rounded-md px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-purple-500"
+									className="w-full theme-bg theme-border rounded-md px-3 py-2 text-sm theme-text focus:outline-none focus:border-purple-500"
 								/>
 							</div>
 							<div>
-								<label className="text-[11px] text-gray-400 mb-1 block">Room Password</label>
+								<label className="text-[11px] theme-text-muted mb-1 block">Room Password</label>
 								<input
 									value={form.room_password}
 									onChange={(e) => set("room_password", e.target.value)}
 									placeholder="e.g. abc123"
-									className="w-full bg-[#050509] border border-gray-700 rounded-md px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-purple-500"
+									className="w-full theme-bg theme-border rounded-md px-3 py-2 text-sm theme-text focus:outline-none focus:border-purple-500"
 								/>
 							</div>
 							<div className="col-span-2">
-								<label className="text-[11px] text-gray-400 mb-1 block">Description</label>
+								<label className="text-[11px] theme-text-muted mb-1 block">Description</label>
 								<textarea
 									value={form.description}
 									onChange={(e) => set("description", e.target.value)}
 									rows={2}
 									placeholder="Optional description…"
-									className="w-full bg-[#050509] border border-gray-700 rounded-md px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-purple-500 resize-none"
+									className="w-full theme-bg theme-border rounded-md px-3 py-2 text-sm theme-text focus:outline-none focus:border-purple-500 resize-none"
 								/>
 							</div>
 						</div>
@@ -198,7 +199,7 @@ function SubmitTournamentModal({ onSubmitted, showToast }: {
 						<div className="flex gap-3 pt-1">
 							<button
 								onClick={() => { setOpen(false); setError(""); }}
-								className="flex-1 rounded-md border border-gray-700 text-xs py-2 text-gray-300 hover:bg-[#11111a] transition"
+								className="flex-1 rounded-md border theme-border text-xs py-2 theme-text hover:bg-opacity-5 transition"
 							>
 								Cancel
 							</button>
@@ -579,37 +580,36 @@ function TournamentCard({
 	const canRaiseIssue = t.status === "completed" && (t.is_registered || t.is_creator);
 
 	return (
-		<article className="rounded-lg border border-gray-800 bg-[#0b0b11] p-4 space-y-3 text-xs">
+		<article className="rounded-lg theme-border theme-bg-card p-4 space-y-3 text-xs">
 			<div className="flex items-center justify-between">
 				<div>
-					<p className="text-gray-200 text-sm">{t.name}</p>
-					<p className="text-[11px] text-gray-500">{t.game}</p>
+					<p className="theme-text text-sm">{t.name}</p>
+					<p className="text-[11px] theme-text-muted">{t.game}</p>
 				</div>
-				<span className="text-[11px] text-gray-500">
+				<span className="text-[11px] theme-text-muted">
 					{t.registered_count}
 					{t.max_players ? ` / ${t.max_players}` : ""} players
 				</span>
 			</div>
 			{t.description && (
-				<p className="text-gray-500 text-[11px]">{t.description}</p>
+				<p className="theme-text-muted text-[11px]">{t.description}</p>
 			)}
-			<p className="text-gray-400">
+			<p className="theme-text-muted">
 				<span className="text-amber-300">{fmt(t.prize_pool)}</span> prize
-				{" · "}entry{" "}
-				{Number(t.entry_fee) === 0 ? "Free" : fmt(t.entry_fee)}
+				{" · "}entry {Number(t.entry_fee) === 0 ? "Free" : fmt(t.entry_fee)}
 			</p>
 
 			{/* Creator controls — only for upcoming/ongoing */}
 			{t.is_creator && (t.status === "upcoming" || t.status === "ongoing") && (
-				<div className="pt-1 border-t border-gray-800 space-y-2">
+				<div className="pt-1 border-t theme-border space-y-2">
 					<p className="text-[11px] text-purple-400">You created this tournament</p>
 
 					{/* Current room details (if already set) */}
 					{hasRoom && (
 						<div className="rounded-md border border-yellow-500/30 bg-yellow-500/5 px-3 py-2 space-y-1">
 							<p className="text-[11px] text-yellow-400 font-medium">Current room details</p>
-							{t.room_id && <p className="text-xs text-gray-200">ID: <span className="font-mono text-yellow-300">{t.room_id}</span></p>}
-							{t.room_password && <p className="text-xs text-gray-200">Password: <span className="font-mono text-yellow-300">{t.room_password}</span></p>}
+							{t.room_id && <p className="text-xs theme-text">ID: <span className="font-mono text-yellow-300">{t.room_id}</span></p>}
+							{t.room_password && <p className="text-xs theme-text">Password: <span className="font-mono text-yellow-300">{t.room_password}</span></p>}
 						</div>
 					)}
 
@@ -624,8 +624,8 @@ function TournamentCard({
 
 			{/* Completed — show result badge + raise issue */}
 			{t.status === "completed" && canRaiseIssue && (
-				<div className="pt-1 border-t border-gray-800 flex items-center justify-between gap-2 flex-wrap">
-					<span className="text-[11px] text-gray-500 border border-gray-700 px-2 py-0.5 rounded-full">
+				<div className="pt-1 border-t theme-border flex items-center justify-between gap-2 flex-wrap">
+					<span className="text-[11px] theme-text-muted border theme-border px-2 py-0.5 rounded-full">
 						completed
 					</span>
 					<RaiseIssueModal tournament={t} onRaised={onFinished} showToast={showToast} />
@@ -645,10 +645,10 @@ function TournamentCard({
 						>
 							🔑 View Room Details
 						</button>
-					)}
+						)}
 					{!hasRoom && (t.status === "upcoming" || t.status === "ongoing") && (
-						<p className="text-center text-[11px] text-gray-600">Room details not set yet — check back soon.</p>
-					)}
+						<p className="text-center text-[11px] theme-text-muted">Room details not set yet — check back soon.</p>
+						)}
 				</div>
 			) : !t.is_creator && t.status !== "completed" ? (
 				<button
@@ -663,30 +663,30 @@ function TournamentCard({
 			{/* Room Details Modal */}
 			{showDetails && (
 				<div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center px-4" onClick={() => setShowDetails(false)}>
-					<div className="bg-[#0b0b11] border border-gray-800 rounded-xl p-6 w-full max-w-sm space-y-4" onClick={(e) => e.stopPropagation()}>
+					<div className="theme-bg-card theme-border rounded-xl p-6 w-full max-w-sm space-y-4" onClick={(e) => e.stopPropagation()}>
 						<div>
-							<h2 className="text-sm font-semibold text-gray-100">{t.name}</h2>
-							<p className="text-[11px] text-gray-500 mt-0.5">{t.game} · {t.status}</p>
+							<h2 className="text-sm font-semibold theme-text">{t.name}</h2>
+							<p className="text-[11px] theme-text-muted mt-0.5">{t.game} · {t.status}</p>
 						</div>
 						<div className="rounded-md border border-yellow-500/30 bg-yellow-500/5 px-4 py-3 space-y-3">
 							<p className="text-[11px] text-yellow-400 font-semibold uppercase tracking-wide">🔑 Room Details</p>
 							{t.room_id ? (
 								<div className="space-y-1">
-									<p className="text-[11px] text-gray-400">Room ID</p>
+									<p className="text-[11px] theme-text-muted">Room ID</p>
 									<p className="font-mono text-lg text-yellow-300 tracking-widest">{t.room_id}</p>
 								</div>
 							) : null}
 							{t.room_password ? (
 								<div className="space-y-1">
-									<p className="text-[11px] text-gray-400">Password</p>
+									<p className="text-[11px] theme-text-muted">Password</p>
 									<p className="font-mono text-lg text-yellow-300 tracking-widest">{t.room_password}</p>
 								</div>
 							) : null}
 						</div>
-						<p className="text-[11px] text-gray-600">These details are only visible to registered players. Do not share them.</p>
+						<p className="text-[11px] theme-text-muted">These details are only visible to registered players. Do not share them.</p>
 						<button
 							onClick={() => setShowDetails(false)}
-							className="w-full rounded-md border border-gray-700 text-xs py-2 text-gray-300 hover:bg-[#11111a] transition"
+							className="w-full rounded-md border theme-border text-xs py-2 theme-text hover:bg-opacity-5 transition"
 						>
 							Close
 						</button>
@@ -699,6 +699,8 @@ function TournamentCard({
 
 export default function TournamentsPage() {
 	const router = useRouter();
+	const { theme } = useTheme();
+	const isDark = theme === 'dark';
 	const [tournaments, setTournaments] = useState<Tournament[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [gameFilter, setGameFilter] = useState<GameFilter>("All");
@@ -765,8 +767,8 @@ export default function TournamentsPage() {
 
 	if (loading) {
 		return (
-			<div className="min-h-screen bg-[#050509] flex items-center justify-center">
-				<p className="text-gray-500 text-sm animate-pulse">
+			<div className="min-h-screen theme-bg flex items-center justify-center">
+				<p className="theme-text-muted text-sm animate-pulse">
 					Loading tournaments…
 				</p>
 			</div>
@@ -774,59 +776,35 @@ export default function TournamentsPage() {
 	}
 
 	return (
-		<div className="min-h-screen bg-[#050509] text-gray-100">
+		<div className="min-h-screen theme-bg theme-text">
+			{/* Toast */}
 			{toast && (
-				<div
-					className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg text-sm font-medium shadow-lg ${
-						toast.ok ? "bg-emerald-600 text-white" : "bg-red-600 text-white"
-					}`}
-				>
-					{toast.msg}
-				</div>
+				<div className={`fixed top-4 right-4 z-50 px-4 py-2.5 rounded-lg text-sm font-medium shadow-lg ${
+					toast.ok ? "bg-emerald-600 text-white" : "bg-red-600 text-white"
+				}`}>{toast.msg}</div>
 			)}
 
 			<main className="px-4 py-8 md:px-8 md:py-10">
-				<div className="max-w-5xl mx-auto space-y-8">
-					{/* Hero */}
-					<header className="flex items-start justify-between gap-4 flex-wrap">
-						<div className="space-y-1">
-							<p className="text-xs uppercase tracking-wide text-purple-400">
-								Tournaments
-							</p>
-							<h1 className="text-2xl md:text-3xl font-semibold">
-								Browse tournaments
-							</h1>
-							<p className="text-sm text-gray-400">
-								Join live events or register for upcoming tournaments.
-							</p>
+				<div className="max-w-6xl mx-auto space-y-8">
+					<section>
+						<div className="flex items-center justify-between mb-3">
+							<h2 className="text-sm font-medium theme-text">Tournaments</h2>
+							<div className="flex items-center gap-2">
+								<SubmitTournamentModal onSubmitted={load} showToast={showToast} />
+							</div>
 						</div>
-						<SubmitTournamentModal onSubmitted={() => void load()} showToast={showToast} />
-					</header>
 
-					{/* Filters */}
-					<section
-						className="flex flex-wrap items-center justify-between gap-3"
-						aria-label="Filters"
-					>
-						<div className="flex flex-wrap gap-2">
-							{GAME_FILTERS.map((g) => (
-								<button
-									key={g}
-									onClick={() => setGameFilter(g)}
-									className={`px-3 py-1.5 rounded-full border text-[11px] transition-colors ${
-										gameFilter === g
-											? "border-purple-500/60 bg-purple-600/20 text-purple-200"
-											: "border-gray-700 text-gray-300 hover:border-purple-500/60 hover:bg-[#11111a]"
-									}`}
-								>
-									{g}
-								</button>
-							))}
+						{/* Filters */}
+						<div className="rounded-lg theme-border theme-bg-card p-3 flex gap-2 items-center">
+							<p className="text-sm theme-text-muted">Filter</p>
+							<select
+								value={gameFilter}
+								onChange={(e) => setGameFilter(e.target.value as GameFilter)}
+								className="theme-bg theme-border rounded px-2 py-1 text-sm theme-text"
+							>
+								{GAME_FILTERS.map((g) => <option key={g}>{g}</option>)}
+							</select>
 						</div>
-						<span className="text-[11px] text-gray-500">
-							{filtered.length} tournament
-							{filtered.length !== 1 ? "s" : ""}
-						</span>
 					</section>
 
 					{/* Live tournaments */}
@@ -835,14 +813,14 @@ export default function TournamentsPage() {
 						aria-label="Live tournaments"
 					>
 						<div className="flex items-center gap-2 text-sm">
-							<h2 className="font-medium text-gray-300">Live now</h2>
+							<h2 className="font-medium theme-text">Live now</h2>
 							<span className="inline-flex items-center rounded-full bg-red-500/10 px-2 py-0.5 text-[10px] font-medium text-red-400 border border-red-500/30">
 								<span className="h-1.5 w-1.5 rounded-full bg-red-400 mr-1 animate-pulse" />
 								LIVE
 							</span>
 						</div>
 						{live.length === 0 ? (
-							<p className="text-xs text-gray-500 rounded-lg border border-gray-800 bg-[#0b0b11] px-4 py-4">
+							<p className="text-xs theme-text-muted rounded-lg theme-border theme-bg-card px-4 py-4">
 								No live tournaments right now.
 							</p>
 						) : (
@@ -863,55 +841,34 @@ export default function TournamentsPage() {
 
 					{/* Upcoming tournaments */}
 					<section
-						className="space-y-3"
+						className="space-y-3 "
 						aria-label="Upcoming tournaments"
 					>
-						<h2 className="text-sm font-medium text-gray-300">Upcoming</h2>
+						<h2 className="text-sm font-medium theme-text">Upcoming</h2>
 						{upcoming.length === 0 ? (
-							<p className="text-xs text-gray-500 rounded-lg border border-gray-800 bg-[#0b0b11] px-4 py-4">
+							<p className="text-xs theme-text-muted rounded-lg theme-border theme-bg-card px-4 py-4">
 								No upcoming tournaments.
 							</p>
 						) : (
-							<div className="rounded-lg border border-gray-800 bg-[#0b0b11] divide-y divide-gray-800 text-xs">
+							<div className="rounded-lg theme-border theme-bg-card divide-y divide-gray-800 text-xs">
 								{upcoming.map((t) => (
-									<article
-										key={t.id}
-										className="flex items-start justify-between px-4 py-3 gap-4"
-									>
+									<article key={t.id} className="flex items-start justify-between px-4 py-3 gap-4">
 										<div className="space-y-0.5">
-											<p className="text-gray-200 text-sm">{t.name}</p>
-											<p className="text-[11px] text-gray-500">
-												{t.game} · starts{" "}
-												{fmtDate(t.start_time)}
-											</p>
-											<p className="text-[11px] text-amber-300">
-												{fmt(t.prize_pool)} prize · entry{" "}
-												{Number(t.entry_fee) === 0
-													? "Free"
-													: fmt(t.entry_fee)}
-											</p>
-											<p className="text-[11px] text-gray-500">
-												{t.registered_count}
-												{t.max_players ? ` / ${t.max_players}` : ""}{" "}
-												registered
-											</p>
+											<p className="theme-text text-sm">{t.name}</p>
+											<p className="text-[11px] theme-text-muted">{t.game} · starts {fmtDate(t.start_time)}</p>
+											<p className="text-[11px] text-amber-300">{fmt(t.prize_pool)} prize · entry {Number(t.entry_fee) === 0 ? "Free" : fmt(t.entry_fee)}</p>
+											<p className="text-[11px] theme-text-muted">{t.registered_count}{t.max_players ? ` / ${t.max_players}` : ""} registered</p>
 										</div>
 										<div className="flex flex-col gap-1.5 items-end shrink-0">
 											{t.is_creator ? (
 												<>
-													<span className="text-[11px] text-purple-400 border border-purple-500/40 px-3 py-1.5 rounded-md whitespace-nowrap">
-														Your tournament
-													</span>
+													<span className="text-[11px] text-purple-400 border border-purple-500/40 px-3 py-1.5 rounded-md whitespace-nowrap">Your tournament</span>
 													<StartTournamentModal tournament={t} onStarted={() => void load()} showToast={showToast} />
 												</>
 											) : t.is_registered ? (
 												<>
-													<span className="text-[11px] text-emerald-400 border border-emerald-500/40 px-3 py-1.5 rounded-md whitespace-nowrap">
-														Registered ✓
-													</span>
-													{(t.room_id || t.room_password) && (
-														<UpcomingRoomButton tournament={t} />
-													)}
+													<span className="text-[11px] text-emerald-400 border border-emerald-500/40 px-3 py-1.5 rounded-md whitespace-nowrap">Registered ✓</span>
+													{(t.room_id || t.room_password) && <UpcomingRoomButton tournament={t} />}
 												</>
 											) : (
 												<button
@@ -932,18 +889,17 @@ export default function TournamentsPage() {
 					{/* Past tournaments */}
 					{past.length > 0 && (
 						<section className="space-y-3">
-							<h2 className="text-sm font-medium text-gray-300">Past</h2>
-							<div className="rounded-lg border border-gray-800 bg-[#0b0b11] divide-y divide-gray-800 text-xs">
+							<h2 className="text-sm font-medium theme-text">Past</h2>
+							<div className="rounded-lg theme-border theme-bg-card divide-y divide-gray-800 text-xs">
 								{past.map((t) => (
 									<article
 										key={t.id}
 										className="flex items-center justify-between px-4 py-3 gap-4"
-									>
+										>
 										<div className="space-y-0.5">
-											<p className="text-gray-400">{t.name}</p>
-											<p className="text-[11px] text-gray-600">
-												{t.game} · ended{" "}
-												{fmtDate(t.end_time)}
+											<p className="theme-text-muted">{t.name}</p>
+											<p className="text-[11px] theme-text-muted">
+												{t.game} · ended {fmtDate(t.end_time)}
 											</p>
 											<p className="text-[11px] text-amber-300/60">
 												{fmt(t.prize_pool)} prize pool
@@ -972,8 +928,8 @@ export default function TournamentsPage() {
 							</div>
 						</section>
 					)}
-				</div>
-			</main>
-		</div>
-	);
+					</div>
+				</main>
+			</div>
+		);
 }

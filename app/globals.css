@@ -48,9 +48,55 @@ body {
 .theme-text-muted { color: var(--text-secondary) !important; }
 .theme-border   { border-color: var(--border) !important; }
 
+/* Light-mode overrides for frequently-used dark utility classes so pages adopting hardcoded classes will respect the light theme */
 
-body {
- 
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-}
+html.light .bg-\[\#050509\] { background-color: var(--bg-primary) !important; }
+html.light .bg-\[\#0b0b11\] { background-color: var(--bg-card) !important; }
+html.light .bg-\[\#11111a\] { background-color: var(--bg-hover) !important; }
+html.light .bg-\[\#111118\] { background-color: var(--bg-hover) !important; }
+html.light .bg-black\/60 { background-color: rgba(0,0,0,0.06) !important; }
+html.light .bg-black\/70 { background-color: rgba(0,0,0,0.08) !important; }
+
+/* Additional common dark-class overrides to reduce inconsistent elements when html.light is set */
+html.light .bg-black { background-color: var(--bg-primary) !important; }
+html.light .bg-gray-900 { background-color: var(--bg-card) !important; }
+html.light .bg-gray-800 { background-color: var(--bg-card) !important; }
+html.light .bg-gray-700 { background-color: var(--bg-card) !important; }
+html.light .border-black { border-color: var(--border) !important; }
+html.light .text-white { color: var(--text-primary) !important; }
+html.light .hover\:bg-\[\#111118\]:hover { background-color: var(--bg-hover) !important; }
+html.light .hover\:bg-\[\#11111a\]:hover { background-color: var(--bg-hover) !important; }
+html.light .hover\:bg-\[\#111118\] { background-color: var(--bg-hover) !important; }
+html.light .hover\:bg-\[\#11111a\] { background-color: var(--bg-hover) !important; }
+
+/* Text colors */
+html.light .text-gray-100 { color: var(--text-primary) !important; }
+html.light .text-gray-200 { color: var(--text-primary) !important; }
+html.light .text-gray-300 { color: var(--text-secondary) !important; }
+html.light .text-gray-400 { color: var(--text-secondary) !important; }
+html.light .text-gray-500 { color: var(--text-muted) !important; }
+html.light .text-gray-900 { color: var(--text-primary) !important; }
+
+/* Borders */
+html.light .border-gray-800 { border-color: var(--border) !important; }
+html.light .border-gray-700 { border-color: var(--border) !important; }
+html.light .divide-gray-800 { --tw-divide-opacity: 1; border-color: var(--border) !important; }
+
+/* Inputs and cards */
+html.light .focus\:border-purple-500:focus { outline: none; border-color: #7c3aed !important; }
+html.light .rounded-xl { background-color: var(--bg-card) !important; }
+
+/* Buttons and small utilities */
+html.light .text-gray-100:hover { color: var(--text-primary) !important; }
+
+/* Ensure form inputs with inline dark class get a light background */
+html.light input[class*="bg-\[\#050509\]"] { background-color: var(--bg-primary) !important; color: var(--text-primary) !important; }
+html.light textarea[class*="bg-\[\#050509\]"] { background-color: var(--bg-primary) !important; color: var(--text-primary) !important; }
+html.light select[class*="bg-\[\#050509\]"] { background-color: var(--bg-primary) !important; color: var(--text-primary) !important; }
+
+/* Ensure theme utilities have priority */
+.theme-bg { background-color: var(--bg-primary) !important; }
+.theme-bg-card { background-color: var(--bg-card) !important; }
+.theme-text { color: var(--text-primary) !important; }
+.theme-text-muted { color: var(--text-secondary) !important; }
+.theme-border { border-color: var(--border) !important; }

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useTheme } from '@/components/ThemeProvider';
 import './matchhistory.css'
 
 type Match = {
@@ -76,10 +77,10 @@ function RaiseIssueBtn({ tournamentId, tournamentName, onRaised }: {
 
       {open && (
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center px-4" onClick={() => setOpen(false)}>
-          <div className="bg-[#0b0b11] border border-gray-800 rounded-xl p-6 w-full max-w-sm space-y-4" onClick={(e) => e.stopPropagation()}>
+          <div className="theme-bg-card theme-border rounded-xl p-6 w-full max-w-sm space-y-4" onClick={(e) => e.stopPropagation()}>
             <div>
-              <h2 className="text-sm font-semibold text-gray-100">Raise an Issue</h2>
-              <p className="text-[11px] text-gray-500 mt-0.5">{tournamentName ?? `Tournament #${tournamentId}`}</p>
+              <h2 className="text-sm font-semibold theme-text">Raise an Issue</h2>
+              <p className="text-[11px] theme-text-muted mt-0.5">{tournamentName ?? `Tournament #${tournamentId}`}</p>
             </div>
             <div className="rounded-md border border-red-500/20 bg-red-500/5 px-3 py-2">
               <p className="text-[11px] text-red-400">
@@ -87,20 +88,20 @@ function RaiseIssueBtn({ tournamentId, tournamentName, onRaised }: {
               </p>
             </div>
             <div>
-              <label className="text-[11px] text-gray-400 mb-1 block">Reason *</label>
+              <label className="text-[11px] theme-text-muted mb-1 block">Reason *</label>
               <textarea
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 rows={3}
                 placeholder="e.g. The declared winner was not in the game, I have proof…"
-                className="w-full bg-[#050509] border border-gray-700 rounded-md px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-red-500 resize-none"
+                className="w-full theme-bg theme-border rounded-md px-3 py-2 text-sm theme-text focus:outline-none focus:border-red-500 resize-none"
               />
             </div>
             {error && <p className="text-xs text-red-400">{error}</p>}
             <div className="flex gap-3">
               <button
                 onClick={() => { setOpen(false); setError(""); setReason(""); }}
-                className="flex-1 rounded-md border border-gray-700 text-xs py-2 text-gray-300 hover:bg-[#11111a] transition"
+                className="flex-1 rounded-md border theme-border text-xs py-2 theme-text hover:bg-opacity-5 transition"
               >
                 Cancel
               </button>
@@ -120,6 +121,9 @@ function RaiseIssueBtn({ tournamentId, tournamentName, onRaised }: {
 }
 
 export default function MatchHistoryPage() {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
   const router = useRouter();
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
@@ -139,8 +143,8 @@ export default function MatchHistoryPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#050509] flex items-center justify-center">
-        <p className="text-gray-500 text-sm animate-pulse">Loading match history…</p>
+      <div className="min-h-screen theme-bg flex items-center justify-center">
+        <p className="theme-text-muted">Loading match history…</p>
       </div>
     );
   }
@@ -149,51 +153,51 @@ export default function MatchHistoryPage() {
   const losses = matches.filter((m) => m.is_winner === false).length;
 
   return (
-    <div className="min-h-screen bg-[#050509] text-gray-100">
+    <div className="min-h-screen theme-bg theme-text">
       <main className="px-4 py-8 md:px-8 md:py-10">
         <div className="max-w-4xl mx-auto space-y-8">
 
           <header className="space-y-1">
             <p className="text-xs uppercase tracking-wide text-purple-400">History</p>
             <h1 className="text-2xl md:text-3xl font-semibold">Match history</h1>
-            <p className="text-sm text-gray-400">Your last 30 matches across all tournaments.</p>
+            <p className="text-sm theme-text-muted">Your last 30 matches across all tournaments.</p>
           </header>
 
           {/* Stats row */}
           <section className="grid grid-cols-3 gap-3">
-            <div className="rounded-lg border border-gray-800 bg-[#0b0b11] px-4 py-3 text-center">
-              <p className="text-[11px] text-gray-400 mb-1">Played</p>
-              <p className="text-xl font-semibold text-gray-100">{matches.length}</p>
+            <div className="rounded-lg theme-border theme-bg-card px-4 py-3 text-center">
+              <p className="text-[11px] theme-text-muted mb-1">Played</p>
+              <p className="text-xl font-semibold theme-text">{matches.length}</p>
             </div>
-            <div className="rounded-lg border border-gray-800 bg-[#0b0b11] px-4 py-3 text-center">
-              <p className="text-[11px] text-gray-400 mb-1">Wins</p>
+            <div className="rounded-lg theme-border theme-bg-card px-4 py-3 text-center">
+              <p className="text-[11px] theme-text-muted mb-1">Wins</p>
               <p className="text-xl font-semibold text-emerald-300">{wins}</p>
             </div>
-            <div className="rounded-lg border border-gray-800 bg-[#0b0b11] px-4 py-3 text-center">
-              <p className="text-[11px] text-gray-400 mb-1">Losses</p>
+            <div className="rounded-lg theme-border theme-bg-card px-4 py-3 text-center">
+              <p className="text-[11px] theme-text-muted mb-1">Losses</p>
               <p className="text-xl font-semibold text-red-400">{losses}</p>
             </div>
           </section>
 
           {/* Match list */}
           <section className="space-y-3">
-            <h2 className="text-sm font-medium text-gray-300">Recent matches</h2>
+            <h2 className="text-sm font-medium theme-text">Recent matches</h2>
             {matches.length === 0 ? (
-              <div className="rounded-lg border border-gray-800 bg-[#0b0b11] px-4 py-10 text-center">
-                <p className="text-sm text-gray-500">No matches played yet.</p>
-                <p className="text-xs text-gray-600 mt-1">Join a tournament to get started.</p>
+              <div className="rounded-lg theme-border theme-bg-card px-4 py-10 text-center">
+                <p className="text-sm theme-text-muted">No matches played yet.</p>
+                <p className="text-xs theme-text-muted mt-1">Join a tournament to get started.</p>
               </div>
             ) : (
-              <div className="rounded-lg border border-gray-800 bg-[#0b0b11] divide-y divide-gray-800 text-xs">
+              <div className="rounded-lg theme-border theme-bg-card divide-y divide-gray-800 text-xs">
                 {matches.map((m) => (
                   <div key={m.id} className="flex items-center justify-between px-4 py-3 gap-4">
                     <div className="space-y-0.5">
-                      <p className="text-gray-200">{m.tournament_name ?? "Casual match"}</p>
-                      <p className="text-[11px] text-gray-500">
+                      <p className="theme-text">{m.tournament_name ?? "Casual match"}</p>
+                      <p className="text-[11px] theme-text-muted">
                         {m.game ?? "—"} · {fmtDate(m.started_at)}
                       </p>
                       {m.score != null && (
-                        <p className="text-[11px] text-gray-400">Score: {m.score}</p>
+                        <p className="text-[11px] theme-text-muted">Score: {m.score}</p>
                       )}
                     </div>
                     <div className="flex flex-col items-end gap-1.5">
@@ -204,7 +208,7 @@ export default function MatchHistoryPage() {
                         <span className="text-[11px] text-red-400 border border-red-500/40 px-2 py-0.5 rounded-full">Loss</span>
                       )}
                       {m.is_winner === null && (
-                        <span className="text-[11px] text-gray-500 border border-gray-700 px-2 py-0.5 rounded-full capitalize">{m.status}</span>
+                        <span className="text-[11px] theme-text-muted border theme-border px-2 py-0.5 rounded-full capitalize">{m.status}</span>
                       )}
                       {m.prize_pool && Number(m.prize_pool) > 0 && (
                         <span className="text-[11px] text-amber-300">NPR {Number(m.prize_pool).toLocaleString("en-IN")}</span>

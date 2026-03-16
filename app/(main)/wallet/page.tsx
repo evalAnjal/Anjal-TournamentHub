@@ -90,31 +90,31 @@ export default function WalletPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#050509] flex items-center justify-center">
+      <div className="min-h-screen theme-bg flex items-center justify-center">
         <p className="text-gray-500 text-sm animate-pulse">Loading wallet…</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#050509] text-gray-100">
+    <div className="min-h-screen theme-bg theme-text">
       {/* Modal */}
       {modal && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center px-4">
-          <div className="bg-[#0b0b11] border border-gray-800 rounded-xl p-6 w-full max-w-sm space-y-4">
-            <h2 className="text-sm font-medium text-gray-200 capitalize">{modal} funds</h2>
+          <div className="theme-bg-card theme-border rounded-xl p-6 w-full max-w-sm space-y-4">
+            <h2 className="text-sm font-medium theme-text capitalize">{modal} funds</h2>
             <input
               type="number"
               placeholder="Amount (NPR)"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="w-full bg-[#050509] border border-gray-700 rounded-md px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-purple-500"
+              className="w-full theme-bg theme-border rounded-md px-3 py-2 text-sm theme-text focus:outline-none"
             />
             {error && <p className="text-xs text-red-400">{error}</p>}
             <div className="flex gap-3">
               <button
                 onClick={() => { setModal(null); setAmount(""); setError(""); }}
-                className="flex-1 rounded-md border border-gray-700 text-xs py-2 text-gray-300 hover:bg-[#11111a] transition"
+                className="flex-1 rounded-md border theme-border text-xs py-2 theme-text hover:bg-opacity-5 transition"
               >
                 Cancel
               </button>
@@ -135,34 +135,34 @@ export default function WalletPage() {
           <header className="space-y-1">
             <p className="text-xs uppercase tracking-wide text-purple-400">Wallet</p>
             <h1 className="text-2xl md:text-3xl font-semibold">Your wallet</h1>
-            <p className="text-sm text-gray-400">Track winnings, deposits and withdrawals.</p>
+            <p className="text-sm theme-text-muted">Track winnings, deposits and withdrawals.</p>
           </header>
 
           {/* Summary */}
           <section className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div className="rounded-lg border border-gray-800 bg-[#0b0b11] px-4 py-3">
-              <p className="text-[11px] text-gray-400 mb-1">Lifetime winnings</p>
+            <div className="rounded-lg theme-border theme-bg-card px-4 py-3">
+              <p className="text-[11px] theme-text-muted mb-1">Lifetime winnings</p>
               <p className="text-sm font-semibold text-emerald-300">{fmt(stats?.lifetime_winnings ?? 0)}</p>
             </div>
-            <div className="rounded-lg border border-gray-800 bg-[#0b0b11] px-4 py-3">
-              <p className="text-[11px] text-gray-400 mb-1">Total deposits</p>
+            <div className="rounded-lg theme-border theme-bg-card px-4 py-3">
+              <p className="text-[11px] theme-text-muted mb-1">Total deposits</p>
               <p className="text-sm font-semibold text-purple-300">{fmt(stats?.total_deposits ?? 0)}</p>
             </div>
-            <div className="rounded-lg border border-gray-800 bg-[#0b0b11] px-4 py-3">
-              <p className="text-[11px] text-gray-400 mb-1">Total payouts</p>
+            <div className="rounded-lg theme-border theme-bg-card px-4 py-3">
+              <p className="text-[11px] theme-text-muted mb-1">Total payouts</p>
               <p className="text-sm font-semibold text-amber-300">{fmt(stats?.total_payouts ?? 0)}</p>
             </div>
           </section>
 
           {/* Balance */}
           <section className="grid gap-6 md:grid-cols-[1.4fr,1.6fr]">
-            <div className="rounded-lg border border-gray-800 bg-[#0b0b11] p-5 space-y-4">
+            <div className="rounded-lg theme-border theme-bg-card p-5 space-y-4">
               <div>
-                <p className="text-xs text-gray-400 mb-1">Available balance</p>
+                <p className="text-xs theme-text-muted mb-1">Available balance</p>
                 <p className="text-3xl font-semibold text-emerald-300">{fmt(wallet?.balance ?? 0)}</p>
               </div>
               <div>
-                <p className="text-xs text-gray-400 mb-1">Locked in tournaments</p>
+                <p className="text-xs theme-text-muted mb-1">Locked in tournaments</p>
                 <p className="text-sm text-amber-300">{fmt(locked)}</p>
               </div>
               <div className="flex gap-3 pt-1">
@@ -174,24 +174,24 @@ export default function WalletPage() {
                 </button>
                 <button
                   onClick={() => setModal("withdraw")}
-                  className="flex-1 rounded-md border border-gray-700 hover:border-emerald-400/60 hover:bg-[#11111a] text-xs py-2.5 text-gray-100 transition-colors"
+                  className="flex-1 rounded-md border theme-border hover:border-emerald-400/60 text-xs py-2.5 theme-text transition-colors"
                 >
                   Withdraw
                 </button>
               </div>
             </div>
-            <div className="rounded-lg border border-gray-800 bg-[#0b0b11] p-5 space-y-3 text-xs">
-              <h2 className="text-sm font-medium text-gray-300 mb-1">Limits & status</h2>
-              <p className="text-gray-400">Daily withdrawal limit: <span className="text-gray-200">NPR 100,000</span></p>
-              <p className="text-gray-400">KYC status: <span className="text-emerald-300">Verified</span></p>
-              <p className="text-gray-500">Manage your payment methods and KYC in settings.</p>
+            <div className="rounded-lg theme-border theme-bg-card p-5 space-y-3 text-xs">
+              <h2 className="text-sm font-medium theme-text mb-1">Limits & status</h2>
+              <p className="theme-text-muted">Daily withdrawal limit: <span className="theme-text">{fmt('100000')}</span></p>
+              <p className="theme-text-muted">KYC status: <span className="text-emerald-300">Verified</span></p>
+              <p className="theme-text-muted">Manage your payment methods and KYC in settings.</p>
             </div>
           </section>
 
           {/* Transactions */}
           <section className="space-y-3">
             <div className="flex items-center justify-between gap-2 flex-wrap">
-              <h2 className="text-sm font-medium text-gray-300">Recent transactions</h2>
+              <h2 className="text-sm font-medium theme-text">Recent transactions</h2>
               <div className="flex flex-wrap gap-1 text-[11px]">
                 {FILTERS.map((f) => (
                   <button
@@ -200,7 +200,7 @@ export default function WalletPage() {
                     className={`px-2 py-1 rounded-full border transition-colors ${
                       filter === f
                         ? "border-purple-500/60 bg-purple-600/20 text-purple-100"
-                        : "border-gray-700 text-gray-400 hover:border-purple-500/40"
+                        : "border-gray-700 theme-text-muted hover:border-purple-500/40"
                     }`}
                   >
                     {f.replace("_", " ")}
@@ -209,21 +209,21 @@ export default function WalletPage() {
               </div>
             </div>
 
-            <div className="rounded-lg border border-gray-800 bg-[#0b0b11] divide-y divide-gray-800 text-xs">
+            <div className="rounded-lg theme-border theme-bg-card divide-y divide-gray-800 text-xs">
               {filtered.length === 0 ? (
                 <p className="px-4 py-6 text-center text-gray-500">No transactions yet.</p>
               ) : (
                 filtered.map((tx) => (
                   <div key={tx.id} className="flex items-center justify-between px-4 py-3">
                     <div>
-                      <p className="text-gray-200 capitalize">{tx.type.replace("_", " ")}</p>
-                      <p className="text-[11px] text-gray-500">{tx.description}</p>
+                      <p className="theme-text capitalize">{tx.type.replace("_", " ")}</p>
+                      <p className="text-[11px] theme-text-muted">{tx.description}</p>
                     </div>
                     <div className="text-right">
                       <p className={tx.type === "deposit" || tx.type === "prize" ? "text-emerald-300" : "text-red-300"}>
                         {tx.type === "deposit" || tx.type === "prize" ? "+" : "-"}{fmt(tx.amount)}
                       </p>
-                      <p className="text-[11px] text-gray-500">{relativeDate(tx.created_at)}</p>
+                      <p className="text-[11px] theme-text-muted">{relativeDate(tx.created_at)}</p>
                     </div>
                   </div>
                 ))

@@ -21,7 +21,7 @@ export const metadata: Metadata = {
 };
 
 // Inline script to apply theme class before first paint (prevents flash)
-const themeScript = `(function(){try{var t=localStorage.getItem('theme')||'dark';document.documentElement.classList.add(t==='light'?'light':'dark');}catch(e){document.documentElement.classList.add('dark');}})();`;
+const themeScript = `(function(){try{var t=localStorage.getItem('theme')||'light';document.documentElement.classList.add(t==='light'?'light':'dark');}catch(e){document.documentElement.classList.add('light');}})();`;
 
 export default function RootLayout({
   children,
